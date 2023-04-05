@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseSettings, Field, PyObject
 
@@ -24,13 +24,13 @@ class APISettings(BaseSettings):
     simplify_openapi_ids: bool = True
 
     @property
-    def fastapi_kwargs(self) -> dict[str, Any]:
+    def fastapi_kwargs(self) -> Dict[str, Any]:
         """
         This returns a dictionary of the most commonly used keyword arguments when initializing a FastAPI instance
         If `self.disable_docs` is True, the various docs-related arguments are disabled, preventing your spec from being
         published.
         """
-        fastapi_kwargs: dict[str, Any] = {
+        fastapi_kwargs = {
             "debug": self.debug,
             "docs_url": self.docs_url,
             "openapi_prefix": self.openapi_prefix,
@@ -46,7 +46,7 @@ class APISettings(BaseSettings):
         return fastapi_kwargs
 
     @property
-    def config_kwargs(self):
+    def config_kwargs(self) -> Dict[str, Any]:
         return {
             "enable_error_handlers": self.enable_error_handlers,
             "healthcheck": self.healthcheck,
