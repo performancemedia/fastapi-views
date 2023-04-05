@@ -1,0 +1,62 @@
+[tool.poetry]
+name = "fastapi-views"
+version = "0.0.1"
+description = "FastAPI Class Views and utilities"
+authors = ["Radzim Kowalow <radzim.kowalow@performance-media.pl>"]
+readme = "README.md"
+packages = [{include = "fastapi_views"}]
+
+[tool.poetry.dependencies]
+python = ">=3.8.1,<4.0"
+fastapi = "^0.95.0"
+orjson = "^3.8.9"
+uvicorn = "^0.21.1"
+starlette-exporter = "^0.15.1"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.2.1"
+pytest-asyncio = "^0.20.2"
+pytest-cov = "^4.0.0"
+mypy = "^0.961"
+black = "^22.3.0"
+flake8 = "^6.0.0"
+isort = "^5.10.1"
+tox = "^3.25.0"
+bandit = "^1.7.4"
+python-semantic-release = "^7.33.2"
+flake8-cognitive-complexity = "^0.1.0"
+
+[tool.poetry.group.docs.dependencies]
+mkdocs = "^1.4.2"
+mkdocs-material = "^8.2.1"
+mkdocs-autorefs = "^0.4.1"
+mkdocs-gen-files = "^0.4.0"
+mkdocstrings-python = "^0.8.2"
+
+[tool.pytest.ini_options]
+addopts = "--cov=./fastapi_views"
+testpaths = [
+   "./tests"
+]
+asyncio_mode = "auto"
+
+[tool.mypy]
+python_version = 3.11
+ignore_missing_imports = true
+no_site_packages = true
+exclude = "^tests"
+
+[tool.isort]
+profile = "black"
+
+[tool.coverage.report]
+exclude_lines = [
+   "pragma: no cover",
+   "if TYPE_CHECKING:",
+   "raise NotImplementedError"
+]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
