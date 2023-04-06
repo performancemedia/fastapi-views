@@ -62,6 +62,11 @@ hvcs = "github"
 commit_message = "Bump version: {version}"
 tag_commit = false
 
+[tool.mypy]
+python_version = 3.9
+ignore_missing_imports = true
+no_site_packages = true
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
