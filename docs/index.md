@@ -1,7 +1,7 @@
 ## Welcome to FastAPI Views documentation
 
 ---
-Version: 0.0.1
+Version: 0.0.2
 
 Docs: [https://performancemedia.github.io/sqlargon/](https://performancemedia.github.io/fastapi_views/)
 
