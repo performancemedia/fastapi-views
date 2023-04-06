@@ -25,7 +25,7 @@ class PK(BaseModel):
     id: UUID
 
 
-class GenericViewMixin(Generic[P], ErrorHandlerMixin):
+class GenericViewMixin(ErrorHandlerMixin, Generic[P]):
     repository: Repository
     params: P = BaseModel
 
