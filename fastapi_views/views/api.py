@@ -1,13 +1,14 @@
+import asyncio
 import inspect
 from abc import ABC, abstractmethod
 from typing import (
+    TYPE_CHECKING,
     Any,
-    AsyncIterable,
+    Awaitable,
     Callable,
     Dict,
     Generator,
     Generic,
-    Iterable,
     Iterator,
     List,
     Optional,
@@ -35,23 +36,27 @@ from .mixins import DetailViewMixin, ErrorHandlerMixin
 S = TypeVar("S", bound=Type[Serializer])
 P = Iterator[Dict[str, Any]]
 
-L = TypeVar("L", bound=Union[AsyncIterable[Any], Iterable[Any]])
+Endpoint = Callable[..., Union[Response, Awaitable[Response]]]
 
 
 class View(ABC):
+    """
+    Basic View Class
+    """
+
     api_component_name: str
     default_response_class: Type[Response] = JsonResponse
 
-    def __init__(self, request: Request, response: Response):
+    def __init__(self, request: Request, response: Response) -> None:
         self.request = request
         self.response = response
 
     @classmethod
-    def get_name(cls):
+    def get_name(cls) -> str:
         return getattr(cls, "api_component_name", cls.__name__)
 
     @classmethod
-    def get_slug_name(cls):
+    def get_slug_name(cls) -> str:
         return f"{cls.get_name().lower().replace(' ', '_')}"
 
     @classmethod
@@ -59,21 +64,30 @@ class View(ABC):
         yield from cls.get_custom_api_actions(prefix)
 
     @classmethod
+    def get_custom_endpoint(cls, func):
+        # TODO: verify if those functions need to be redefined in loop
+        async def _async_endpoint(self, *args, **kwargs):
+            res = await func(self, *args, **kwargs)
+            return self.get_response(content=res)
+
+        def _sync_endpoint(self, *args, **kwargs):
+            res = func(self, *args, **kwargs)
+            return self.get_response(content=res)
+
+        if asyncio.iscoroutinefunction(func):
+            endpoint = _async_endpoint
+        else:
+            endpoint = _sync_endpoint
+
+        cls._patch_endpoint_signature(endpoint, func)
+        return endpoint
+
+    @classmethod
     def get_custom_api_actions(cls, prefix: str = ""):
         for _, route_endpoint in inspect.getmembers(
             cls, lambda member: callable(member) and hasattr(member, VIEWSET_ROUTE_FLAG)
         ):
-
-            def decorator(f):
-                async def dec_endpoint(self, *args, **kwargs):
-                    obj = await f(self, *args, **kwargs)
-                    return self.get_response(content=obj)
-
-                return dec_endpoint
-
-            endpoint = decorator(route_endpoint)
-
-            cls._patch_endpoint_signature(endpoint, route_endpoint)
+            endpoint = cls.get_custom_endpoint(route_endpoint)
             yield cls.get_api_action(
                 endpoint, prefix=prefix, name=f"{endpoint.__name__} {cls.get_name()}"
             )
@@ -128,38 +142,35 @@ class View(ABC):
 
 
 class APIView(View, ErrorHandlerMixin, Generic[S]):
+    """
+    View with build-in json serialization via
+    `serializer` and error handling
+    """
+
     serializer: S
 
     @classmethod
     def get_serializer(cls, action: str) -> S:
         return cls.serializer
 
-    async def serialize_response(
+    def serialize_response(
         self, action: str, content: Any, status_code: int = HTTP_200_OK
     ):
         if content:
             serializer = self.get_serializer(action)
-            content = await serializer.parse(content)
+            content = serializer.parse(content)
         if self.response.status_code is None:
             self.response.status_code = status_code
         return self.get_response(content)
 
 
-class ListAPIView(APIView, Generic[L]):
+class BaseListAPIView(APIView):
     serializer_to_list: bool = True
 
-    @abstractmethod
-    async def list(self, *args, **kwargs) -> L:
-        raise NotImplementedError
-
     @classmethod
-    def get_list_endpoint(cls):
-        async def endpoint(self: ListAPIView, *args, **kwargs):
-            objects = await self.list(*args, **kwargs)
-            return await self.serialize_response("list", objects)
-
-        cls._patch_endpoint_signature(endpoint, cls.list)
-        return endpoint
+    @abstractmethod
+    def get_list_endpoint(cls) -> Endpoint:
+        raise NotImplementedError
 
     @classmethod
     def get_api_actions(cls, prefix: str = ""):
@@ -179,17 +190,50 @@ class ListAPIView(APIView, Generic[L]):
         yield from super().get_api_actions(prefix)
 
 
-class RetrieveAPIView(APIView, DetailViewMixin):
+class AsyncListAPIView(BaseListAPIView, ABC):
     @classmethod
-    def get_retrieve_endpoint(cls):
-        async def endpoint(self: RetrieveAPIView, *args, **kwargs):
-            obj = await self.retrieve(*args, **kwargs)
-            if obj is None and self.raise_on_none:
-                self.raise_not_found_error()
-            return await self.serialize_response("retrieve", obj)
+    def get_list_endpoint(cls) -> Endpoint:
+        async def endpoint(self, *args, **kwargs) -> Response:
+            objects = await self.list(*args, **kwargs)
+            return self.serialize_response("list", objects)
 
-        cls._patch_endpoint_signature(endpoint, cls.retrieve)
+        cls._patch_endpoint_signature(endpoint, cls.list)
         return endpoint
+
+    if TYPE_CHECKING:
+        list: Callable[..., Awaitable[Any]]
+    else:
+
+        @abstractmethod
+        async def list(self, *args, **kwargs) -> Any:
+            raise NotImplementedError
+
+
+class ListAPIView(BaseListAPIView, ABC):
+    @classmethod
+    def get_list_endpoint(cls) -> Endpoint:
+        def endpoint(self: ListAPIView, *args, **kwargs):
+            objects = self.list(*args, **kwargs)
+            return self.serialize_response("list", objects)
+
+        cls._patch_endpoint_signature(endpoint, cls.list)
+        return endpoint
+
+    if TYPE_CHECKING:
+        list: Callable[..., Any]
+
+    else:
+
+        @abstractmethod
+        def list(self, *args, **kwargs) -> Any:
+            raise NotImplementedError
+
+
+class BaseRetrieveAPIView(APIView, DetailViewMixin):
+    @classmethod
+    @abstractmethod
+    def get_retrieve_endpoint(cls) -> Endpoint:
+        raise NotImplementedError
 
     @classmethod
     def get_api_actions(cls, prefix: str = ""):
@@ -205,24 +249,56 @@ class RetrieveAPIView(APIView, DetailViewMixin):
         )
         yield from super().get_api_actions(prefix)
 
-    @abstractmethod
-    async def retrieve(self, *args, **kwargs) -> Optional[Any]:
-        raise NotImplementedError
+
+class RetrieveAPIView(BaseRetrieveAPIView):
+    @classmethod
+    def get_retrieve_endpoint(cls) -> Endpoint:
+        def endpoint(self, *args, **kwargs):
+            obj = self.retrieve(*args, **kwargs)
+            if obj is None and self.raise_on_none:
+                self.raise_not_found_error()
+            return self.serialize_response("retrieve", obj)
+
+        cls._patch_endpoint_signature(endpoint, cls.retrieve)
+        return endpoint
+
+    if TYPE_CHECKING:
+        retrieve: Callable[..., Any]
+    else:
+
+        @abstractmethod
+        def retrieve(self, *args, **kwargs) -> Optional[Any]:
+            raise NotImplementedError
 
 
-class CreateAPIView(APIView):
+class AsyncRetrieveAPIView(BaseRetrieveAPIView):
+    @classmethod
+    def get_retrieve_endpoint(cls) -> Endpoint:
+        async def endpoint(self: AsyncRetrieveAPIView, *args, **kwargs):
+            obj = await self.retrieve(*args, **kwargs)
+            if obj is None and self.raise_on_none:
+                self.raise_not_found_error()
+            return self.serialize_response("retrieve", obj)
+
+        cls._patch_endpoint_signature(endpoint, cls.retrieve)
+        return endpoint
+
+    if TYPE_CHECKING:
+        retrieve: Callable[..., Awaitable[Any]]
+    else:
+
+        @abstractmethod
+        async def retrieve(self, *args, **kwargs) -> Optional[Any]:
+            raise NotImplementedError
+
+
+class BaseCreateAPIView(APIView):
     return_on_create: bool = True
 
     @classmethod
-    def get_create_endpoint(cls):
-        async def endpoint(self: CreateAPIView, *args, **kwargs):
-            obj = await self.create(*args, **kwargs)
-            if self.return_on_create:
-                return await self.serialize_response("create", obj, HTTP_201_CREATED)
-            return Response(status_code=HTTP_201_CREATED)
-
-        cls._patch_endpoint_signature(endpoint, cls.create)
-        return endpoint
+    @abstractmethod
+    def get_create_endpoint(cls) -> Endpoint:
+        raise NotImplementedError
 
     @classmethod
     def get_api_actions(cls, prefix: str = ""):
@@ -238,29 +314,62 @@ class CreateAPIView(APIView):
         )
         yield from super().get_api_actions(prefix)
 
-    @abstractmethod
-    async def create(self, *args, **kwargs) -> Any:
-        raise NotImplementedError
+
+class CreateAPIView(BaseCreateAPIView):
+    @classmethod
+    def get_create_endpoint(cls) -> Endpoint:
+        def endpoint(self, *args, **kwargs) -> Response:
+            obj = self.create(*args, **kwargs)
+            if self.return_on_create:
+                return self.serialize_response("create", obj, HTTP_201_CREATED)
+            return Response(status_code=HTTP_201_CREATED)
+
+        cls._patch_endpoint_signature(endpoint, cls.create)
+        return endpoint
+
+    if TYPE_CHECKING:
+        create: Callable[..., Any]
+
+    else:
+
+        @abstractmethod
+        def create(self, *args, **kwargs) -> Any:
+            raise NotImplementedError
 
 
-class UpdateAPIView(APIView, DetailViewMixin):
+class AsyncCreateAPIView(BaseCreateAPIView):
+    @classmethod
+    def get_create_endpoint(cls) -> Endpoint:
+        async def endpoint(self, *args, **kwargs) -> Response:
+            obj = await self.create(*args, **kwargs)
+            if self.return_on_create:
+                return self.serialize_response("create", obj, HTTP_201_CREATED)
+            return Response(status_code=HTTP_201_CREATED)
+
+        cls._patch_endpoint_signature(endpoint, cls.create)
+        return endpoint
+
+    if TYPE_CHECKING:
+        create: Callable[..., Awaitable[Any]]
+
+    else:
+
+        @abstractmethod
+        async def create(self, *args, **kwargs) -> Any:
+            raise NotImplementedError
+
+
+class BaseUpdateAPIView(APIView, DetailViewMixin):
     return_on_update: bool = True
 
     @classmethod
-    def get_update_endpoint(cls):
-        async def endpoint(self: UpdateAPIView, *args, **kwargs):
-            obj = await self.update(*args, **kwargs)
-            if not self.return_on_update:
-                return Response(status_code=HTTP_200_OK)
-            if obj is None and self.raise_on_none:
-                self.raise_not_found_error()
-            return await self.serialize_response("update", obj)
-
-        cls._patch_endpoint_signature(endpoint, cls.update)
-        return endpoint
+    @abstractmethod
+    def get_update_endpoint(cls) -> Endpoint:
+        raise NotImplementedError
 
     @classmethod
     def get_api_actions(cls, prefix: str = ""):
+
         yield cls.get_api_action(
             prefix=prefix,
             path=cls.get_detail_route(action="update"),
@@ -273,26 +382,57 @@ class UpdateAPIView(APIView, DetailViewMixin):
         )
         yield from super().get_api_actions(prefix)
 
-    @abstractmethod
-    async def update(self, *args, **kwargs):
-        raise NotImplementedError
 
-
-class PartialUpdateAPIView(APIView, DetailViewMixin):
-    return_on_update: bool = True
-
+class UpdateAPIView(BaseUpdateAPIView):
     @classmethod
-    def get_partial_update_endpoint(cls):
-        async def endpoint(self: PartialUpdateAPIView, *args, **kwargs):
-            obj = await self.partial_update(*args, **kwargs)
+    def get_update_endpoint(cls) -> Endpoint:
+        def endpoint(self, *args, **kwargs):
+            obj = self.update(*args, **kwargs)
+            if not self.return_on_update:
+                return Response(status_code=HTTP_200_OK)
             if obj is None and self.raise_on_none:
                 self.raise_not_found_error()
-            if self.return_on_update:
-                return await self.serialize_response("partial_update", obj)
-            return Response(status_code=HTTP_200_OK)
+            return self.serialize_response("update", obj)
 
-        cls._patch_endpoint_signature(endpoint, cls.partial_update)
+        cls._patch_endpoint_signature(endpoint, cls.update)
         return endpoint
+
+    if TYPE_CHECKING:
+        update: Callable[..., Any]
+
+    else:
+
+        @abstractmethod
+        def update(self, *args, **kwargs):
+            raise NotImplementedError
+
+
+class AsyncUpdateAPIView(BaseUpdateAPIView):
+    @classmethod
+    def get_update_endpoint(cls) -> Endpoint:
+        async def endpoint(self, *args, **kwargs):
+            obj = await self.update(*args, **kwargs)
+            if not self.return_on_update:
+                return Response(status_code=HTTP_200_OK)
+            if obj is None and self.raise_on_none:
+                self.raise_not_found_error()
+            return self.serialize_response("update", obj)
+
+        cls._patch_endpoint_signature(endpoint, cls.update)
+        return endpoint
+
+    if TYPE_CHECKING:
+        update: Callable[..., Awaitable[Any]]
+
+    else:
+
+        @abstractmethod
+        async def update(self, *args, **kwargs):
+            raise NotImplementedError
+
+
+class BasePartialUpdateAPIView(APIView, DetailViewMixin):
+    return_on_update: bool = True
 
     @classmethod
     def get_api_actions(cls, prefix: str = "") -> Generator:
@@ -309,21 +449,59 @@ class PartialUpdateAPIView(APIView, DetailViewMixin):
 
         yield from super().get_api_actions(prefix)
 
+    @classmethod
     @abstractmethod
-    async def partial_update(self, *args, **kwargs):
+    def get_partial_update_endpoint(cls) -> Endpoint:
         raise NotImplementedError
 
 
-class DestroyAPIView(APIView, DetailViewMixin):
+class PartialUpdateAPIView(BasePartialUpdateAPIView):
     @classmethod
-    def get_destroy_endpoint(cls):
-        async def endpoint(self: DestroyAPIView, *args, **kwargs):
-            await self.destroy(*args, **kwargs)
-            return Response(status_code=HTTP_204_NO_CONTENT)
+    def get_partial_update_endpoint(cls) -> Endpoint:
+        def endpoint(self, *args, **kwargs):
+            obj = self.partial_update(*args, **kwargs)
+            if obj is None and self.raise_on_none:
+                self.raise_not_found_error()
+            if self.return_on_update:
+                return self.serialize_response("partial_update", obj)
+            return Response(status_code=HTTP_200_OK)
 
-        cls._patch_endpoint_signature(endpoint, cls.destroy)
+        cls._patch_endpoint_signature(endpoint, cls.partial_update)
         return endpoint
 
+    if TYPE_CHECKING:
+        partial_update: Callable[..., Any]
+    else:
+
+        @abstractmethod
+        def partial_update(self, *args, **kwargs):
+            raise NotImplementedError
+
+
+class AsyncPartialUpdateAPIView(BasePartialUpdateAPIView):
+    @classmethod
+    def get_partial_update_endpoint(cls) -> Endpoint:
+        async def endpoint(self, *args, **kwargs):
+            obj = await self.partial_update(*args, **kwargs)
+            if obj is None and self.raise_on_none:
+                self.raise_not_found_error()
+            if self.return_on_update:
+                return self.serialize_response("partial_update", obj)
+            return Response(status_code=HTTP_200_OK)
+
+        cls._patch_endpoint_signature(endpoint, cls.partial_update)
+        return endpoint
+
+    if TYPE_CHECKING:
+        partial_update: Callable[..., Awaitable[Any]]
+    else:
+
+        @abstractmethod
+        async def partial_update(self, *args, **kwargs):
+            raise NotImplementedError
+
+
+class BaseDestroyAPIView(APIView, DetailViewMixin):
     @classmethod
     def get_api_actions(cls, prefix: str = "") -> Generator:
         yield cls.get_api_action(
@@ -338,6 +516,45 @@ class DestroyAPIView(APIView, DetailViewMixin):
         )
         yield from super().get_api_actions(prefix)
 
+    @classmethod
     @abstractmethod
-    async def destroy(self, *args, **kwargs) -> None:
+    def get_destroy_endpoint(cls):
         raise NotImplementedError
+
+
+class DestroyAPIView(BaseDestroyAPIView):
+    @classmethod
+    def get_destroy_endpoint(cls) -> Endpoint:
+        def endpoint(self, *args, **kwargs) -> Response:
+            self.destroy(*args, **kwargs)
+            return Response(status_code=HTTP_204_NO_CONTENT)
+
+        cls._patch_endpoint_signature(endpoint, cls.destroy)
+        return endpoint
+
+    if TYPE_CHECKING:
+        destroy: Callable[..., Any]
+    else:
+
+        @abstractmethod
+        def destroy(self, *args, **kwargs) -> None:
+            raise NotImplementedError
+
+
+class AsyncDestroyAPIView(BaseDestroyAPIView):
+    @classmethod
+    def get_destroy_endpoint(cls) -> Endpoint:
+        async def endpoint(self, *args, **kwargs) -> Response:
+            await self.destroy(*args, **kwargs)
+            return Response(status_code=HTTP_204_NO_CONTENT)
+
+        cls._patch_endpoint_signature(endpoint, cls.destroy)
+        return endpoint
+
+    if TYPE_CHECKING:
+        destroy: Callable[..., Awaitable[Any]]
+    else:
+
+        @abstractmethod
+        async def destroy(self, *args, **kwargs) -> None:
+            raise NotImplementedError

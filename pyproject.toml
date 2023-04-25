@@ -26,6 +26,8 @@ tox = "^3.25.0"
 bandit = "^1.7.4"
 python-semantic-release = "^7.33.2"
 flake8-cognitive-complexity = "^0.1.0"
+httpx = "^0.24.0"
+asgi-lifespan = "^2.1.0"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "^1.4.2"

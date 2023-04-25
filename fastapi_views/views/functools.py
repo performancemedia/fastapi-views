@@ -1,3 +1,4 @@
+import asyncio
 import functools
 from typing import Any, Callable, Tuple, Type, Union
 
@@ -25,26 +26,44 @@ def route(**kwargs: Any) -> Callable:
 def catch(exc_type: Union[Type[Exception], Tuple[Type[Exception]]], **kw: Any):
     def wrapper(func):
         @functools.wraps(func)
-        async def wrapped(self, *args, **kwargs):
+        async def wrapped_async(self, *args, **kwargs):
             try:
                 return await func(self, *args, **kwargs)
             except exc_type as e:
                 self.handle_error(exc_type, e, **kw)
 
-        return wrapped
+        @functools.wraps(func)
+        def wrapped_sync(self, *args, **kwargs):
+            try:
+                return func(self, *args, **kwargs)
+            except exc_type as e:
+                self.handle_error(exc_type, e, **kw)
+
+        if asyncio.iscoroutinefunction(func):
+            return wrapped_async
+        return wrapped_sync
 
     return wrapper
 
 
 def catch_defined(func):
     @functools.wraps(func)
-    async def wrapped(self: ErrorHandlerMixin, *args, **kwargs):
+    async def wrapped_async(self: ErrorHandlerMixin, *args, **kwargs):
         try:
             return await func(self, *args, **kwargs)
         except self.catches as e:
             self.handle_error(type(e), e)
 
-    return wrapped
+    @functools.wraps(func)
+    def wrapped_sync(self: ErrorHandlerMixin, *args, **kwargs):
+        try:
+            return func(self, *args, **kwargs)
+        except self.catches as e:
+            self.handle_error(type(e), e)
+
+    if asyncio.iscoroutinefunction(func):
+        return wrapped_async
+    return wrapped_sync
 
 
 get = functools.partial(route, methods=["GET"])

@@ -34,8 +34,7 @@ from typing import Optional
 from uuid import UUID
 
 from fastapi_views import Serializer
-from fastapi_views.views.api import L
-from fastapi_views.views.viewsets import APIViewSet
+from fastapi_views.views.viewsets import AsyncAPIViewSet
 
 
 class ItemSchema(Serializer):
@@ -47,10 +46,10 @@ class ItemSchema(Serializer):
 items = {}
 
 
-class MyView(APIViewSet):
+class MyViewSet(AsyncAPIViewSet):
     serializer = ItemSchema
-
-    async def list(self, *args, **kwargs) -> L:
+    
+    async def list(self, *args, **kwargs):
         return list(items.values())
 
     async def create(self, item: ItemSchema) -> ItemSchema:

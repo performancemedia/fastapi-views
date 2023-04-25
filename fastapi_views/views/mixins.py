@@ -28,15 +28,13 @@ class _Sentinel(Exception):
 
 class ErrorHandlerMixin:
     request: Request
-    default_error_message = {
-        "detail": "Something went wrong",
-        "status": HTTP_400_BAD_REQUEST,
-    }
 
     catch: dict[type[Exception], dict[str, Any]] = {}
 
     def get_error_message(self, key: type[Exception]):
-        return self.catch.get(key) or self.default_error_message
+        return self.catch.get(
+            key, {"detail": "Something went wrong", "status": HTTP_400_BAD_REQUEST}
+        )
 
     def handle_error(self, exc_type: type[Exception], exc: Exception, **kwargs):
         kwargs.update(**self.get_error_message(exc_type))
