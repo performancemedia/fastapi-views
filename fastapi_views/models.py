@@ -22,7 +22,7 @@ class APIModel(BaseModel):
         name: Optional[str] = None,
         exclude: Optional[Set[str]] = None,
         partial: bool = False,
-    ) -> type[BaseModel]:
+    ) -> Type[BaseModel]:
         _exclude = exclude or set()
         new_cls = type(
             name or f"Partial{cls.__name__}",

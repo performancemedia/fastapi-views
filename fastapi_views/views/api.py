@@ -118,7 +118,7 @@ class View(ABC):
     @classmethod
     def _patch_endpoint_signature(cls, endpoint, method: Callable) -> None:
         old_signature = inspect.signature(method)
-        old_parameters: list[inspect.Parameter] = list(
+        old_parameters: List[inspect.Parameter] = list(
             old_signature.parameters.values()
         )
         old_first_parameter = old_parameters[0]
