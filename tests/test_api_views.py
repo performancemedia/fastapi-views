@@ -22,7 +22,7 @@ async def test_create_api_view(client, dummy_data):
     assert response.status_code == 201
 
 
-# @pytest.mark.usefixtures("destroy_view")
-# async def test_destroy_api_view(client):
-#     response = await client.delete("/test")
-#     assert response.status_code == 204
+@pytest.mark.usefixtures("destroy_view")
+async def test_destroy_api_view(client):
+    response = await client.delete("/test")
+    assert response.status_code == 204

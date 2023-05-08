@@ -43,11 +43,3 @@ class AsyncRepository(Protocol[Entity]):
 
     async def list(self, *args, **kwargs) -> list[Entity]:
         ...
-
-
-class SideService(Protocol):
-    async def start(self, *args, **kwargs) -> None:
-        ...
-
-    async def stop(self, *args, **kwargs) -> None:
-        ...

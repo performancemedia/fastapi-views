@@ -1,11 +1,16 @@
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import Any, Callable, Generic, TypeVar, Union
+from uuid import UUID
 
 from fastapi import Request
+from pydantic import BaseModel
 from starlette.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
 
 from ..errors import APIError
+from ..types import AsyncRepository, Repository
+
+R = TypeVar("R", bound=Union[AsyncRepository, Repository])
 
 
 class DetailViewMixin:
@@ -46,3 +51,20 @@ class ErrorHandlerMixin:
     @property
     def catches(self):
         return tuple(self.catch.keys()) or _Sentinel
+
+
+class IdModel(BaseModel):
+    id: UUID
+
+
+class GenericViewMixin(ErrorHandlerMixin, Generic[R]):
+    repository: R
+    params: type[BaseModel] = BaseModel
+
+    @classmethod
+    def get_params(cls, action: str):
+        return cls.params
+
+
+class GenericDetailViewMixin(GenericViewMixin[R], DetailViewMixin):
+    pk: type[BaseModel] = IdModel

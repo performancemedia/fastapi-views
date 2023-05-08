@@ -28,8 +28,8 @@ from starlette.status import (
 )
 
 from ..errors import errors
+from ..models import Serializer
 from ..response import JsonResponse
-from ..serializer import Serializer
 from .functools import VIEWSET_ROUTE_FLAG
 from .mixins import DetailViewMixin, ErrorHandlerMixin
 
@@ -193,7 +193,7 @@ class BaseListAPIView(APIView):
 class AsyncListAPIView(BaseListAPIView, ABC):
     @classmethod
     def get_list_endpoint(cls) -> Endpoint:
-        async def endpoint(self, *args, **kwargs) -> Response:
+        async def endpoint(self: AsyncListAPIView, *args, **kwargs):
             objects = await self.list(*args, **kwargs)
             return self.serialize_response("list", objects)
 
@@ -253,7 +253,7 @@ class BaseRetrieveAPIView(APIView, DetailViewMixin):
 class RetrieveAPIView(BaseRetrieveAPIView):
     @classmethod
     def get_retrieve_endpoint(cls) -> Endpoint:
-        def endpoint(self, *args, **kwargs):
+        def endpoint(self: RetrieveAPIView, *args, **kwargs):
             obj = self.retrieve(*args, **kwargs)
             if obj is None and self.raise_on_none:
                 self.raise_not_found_error()
@@ -263,7 +263,7 @@ class RetrieveAPIView(BaseRetrieveAPIView):
         return endpoint
 
     if TYPE_CHECKING:
-        retrieve: Callable[..., Any]
+        retrieve: Callable[..., Optional[Any]]
     else:
 
         @abstractmethod
@@ -318,7 +318,7 @@ class BaseCreateAPIView(APIView):
 class CreateAPIView(BaseCreateAPIView):
     @classmethod
     def get_create_endpoint(cls) -> Endpoint:
-        def endpoint(self, *args, **kwargs) -> Response:
+        def endpoint(self: CreateAPIView, *args, **kwargs):
             obj = self.create(*args, **kwargs)
             if self.return_on_create:
                 return self.serialize_response("create", obj, HTTP_201_CREATED)
@@ -340,7 +340,7 @@ class CreateAPIView(BaseCreateAPIView):
 class AsyncCreateAPIView(BaseCreateAPIView):
     @classmethod
     def get_create_endpoint(cls) -> Endpoint:
-        async def endpoint(self, *args, **kwargs) -> Response:
+        async def endpoint(self: AsyncCreateAPIView, *args, **kwargs):
             obj = await self.create(*args, **kwargs)
             if self.return_on_create:
                 return self.serialize_response("create", obj, HTTP_201_CREATED)
@@ -525,7 +525,7 @@ class BaseDestroyAPIView(APIView, DetailViewMixin):
 class DestroyAPIView(BaseDestroyAPIView):
     @classmethod
     def get_destroy_endpoint(cls) -> Endpoint:
-        def endpoint(self, *args, **kwargs) -> Response:
+        def endpoint(self, *args, **kwargs):
             self.destroy(*args, **kwargs)
             return Response(status_code=HTTP_204_NO_CONTENT)
 
@@ -533,7 +533,7 @@ class DestroyAPIView(BaseDestroyAPIView):
         return endpoint
 
     if TYPE_CHECKING:
-        destroy: Callable[..., Any]
+        destroy: Callable[..., None]
     else:
 
         @abstractmethod
@@ -544,7 +544,7 @@ class DestroyAPIView(BaseDestroyAPIView):
 class AsyncDestroyAPIView(BaseDestroyAPIView):
     @classmethod
     def get_destroy_endpoint(cls) -> Endpoint:
-        async def endpoint(self, *args, **kwargs) -> Response:
+        async def endpoint(self, *args, **kwargs):
             await self.destroy(*args, **kwargs)
             return Response(status_code=HTTP_204_NO_CONTENT)
 
@@ -552,7 +552,7 @@ class AsyncDestroyAPIView(BaseDestroyAPIView):
         return endpoint
 
     if TYPE_CHECKING:
-        destroy: Callable[..., Awaitable[Any]]
+        destroy: Callable[..., Awaitable[None]]
     else:
 
         @abstractmethod

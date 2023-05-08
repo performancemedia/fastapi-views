@@ -19,15 +19,16 @@ jobs:
       - run: poetry run black --check ./fastapi_views
       - run: poetry run mypy ./fastapi_views
 
-  build-unix:
+  build:
     timeout-minutes: 30
-    strategy:
-      matrix:
-        os: ["ubuntu-22.04"]
-        python: ["3.8.6", "3.9", "3.10", "3.11"]
-
-    runs-on: ${{ matrix.os }}
-    name: test on ${{ matrix.python }} - ${{ matrix.os }}
+    runs-on: "ubuntu-latest"
+#    strategy:
+#      matrix:
+#        os: ["ubuntu-22.04"]
+#        python: ["3.8", "3.9", "3.10", "3.11"]
+#
+#    runs-on: ${{ matrix.os }}
+#    name: test on ${{ matrix.python }} - ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v3

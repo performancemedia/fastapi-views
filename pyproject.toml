@@ -10,15 +10,14 @@ packages = [{include = "fastapi_views"}]
 python = ">=3.8.1,<4.0"
 fastapi = "^0.95.0"
 orjson = "^3.8.9"
-uvicorn = "^0.21.1"
-starlette-exporter = "^0.15.1"
+uvicorn = "^0.22.0"
+starlette-exporter = "^0.16"
 
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.1"
 pytest-asyncio = "^0.20.2"
 pytest-cov = "^4.0.0"
-mypy = "^0.961"
 black = "^22.3.0"
 flake8 = "^6.0.0"
 isort = "^5.10.1"
@@ -28,6 +27,7 @@ python-semantic-release = "^7.33.2"
 flake8-cognitive-complexity = "^0.1.0"
 httpx = "^0.24.0"
 asgi-lifespan = "^2.1.0"
+mypy = "^1.2.0"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "^1.4.2"

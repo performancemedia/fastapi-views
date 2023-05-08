@@ -1,11 +1,9 @@
-from typing import Any, Generic, Type, TypeVar, Union
-from uuid import UUID
+from typing import Any, Optional, Type
 
 from fastapi import Depends, Response
 from pydantic import BaseModel
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
-from ..serializer import Serializer
 from ..types import AsyncRepository, Repository
 from .api import (
     AsyncCreateAPIView,
@@ -17,36 +15,21 @@ from .api import (
     CreateAPIView,
     Endpoint,
     ListAPIView,
+    PartialUpdateAPIView,
     RetrieveAPIView,
 )
 from .functools import catch_defined
-from .mixins import ErrorHandlerMixin
-
-P = TypeVar("P", bound=Type[BaseModel])
-R = TypeVar("R", bound=Union[AsyncRepository, Repository])
+from .mixins import GenericDetailViewMixin, GenericViewMixin
 
 
-class PK(BaseModel):
-    id: UUID
-
-
-class GenericViewMixin(ErrorHandlerMixin, Generic[P, R]):
-    params: P = BaseModel
-    repository: R
-
-    @classmethod
-    def get_params(cls, action: str) -> P:
-        return cls.params
-
-
-class GenericListView(ListAPIView, GenericViewMixin[P, Repository]):
+class GenericListView(ListAPIView, GenericViewMixin[Repository]):
     @classmethod
     def get_list_endpoint(cls) -> Endpoint:
         param_type = cls.get_params("list")
 
         def endpoint(
             self: GenericListView = Depends(cls),
-            params=Depends(param_type),
+            params: param_type = Depends(param_type),  # type: ignore[valid-type]
         ):
             objects = self.list(**params.dict(exclude_none=True))  # type: ignore[attr-defined]
             return self.serialize_response("list", objects, status_code=HTTP_200_OK)
@@ -55,11 +38,11 @@ class GenericListView(ListAPIView, GenericViewMixin[P, Repository]):
         return endpoint
 
     @catch_defined
-    def list(self, *args, **kwargs):
-        return self.repository.list(*args, **kwargs)
+    def list(self, **kwargs):
+        return self.repository.list(**kwargs)
 
 
-class AsyncGenericListView(AsyncListAPIView, GenericViewMixin[P, AsyncRepository]):
+class AsyncGenericListView(AsyncListAPIView, GenericViewMixin[AsyncRepository]):
     @classmethod
     def get_list_endpoint(cls):
         param_type = cls.get_params("list")
@@ -79,23 +62,23 @@ class AsyncGenericListView(AsyncListAPIView, GenericViewMixin[P, AsyncRepository
         return await self.repository.list(*args, **kwargs)
 
 
-class GenericCreateView(CreateAPIView, GenericViewMixin[P, Repository]):
-    create_serializer: Type[Serializer]
+class GenericCreateView(CreateAPIView, GenericViewMixin[Repository]):
+    create_serializer: Optional[Type[BaseModel]] = None
 
     @classmethod
     def get_create_endpoint(cls):
-        create_serializer_type = cls.create_serializer
         param_type = cls.get_params("create")
+        create_serializer_type = cls.create_serializer or cls.serializer.subclass(
+            name=f"Create{cls.serializer.__name__}"
+        )
 
         def endpoint(
             create_serializer: create_serializer_type,
             self: GenericCreateView = Depends(cls),
             params: param_type = Depends(param_type),
         ):
-
             obj = self.create(
-                create_serializer=create_serializer,
-                **params.dict(exclude_none=True),  # type: ignore[attr-defined]
+                create_serializer.dict(), **params.dict(exclude_none=True)  # type: ignore[attr-defined]
             )
             if self.return_on_create:
                 return self.serialize_response(
@@ -107,17 +90,19 @@ class GenericCreateView(CreateAPIView, GenericViewMixin[P, Repository]):
         return endpoint
 
     @catch_defined
-    def create(self, *args, **kwargs):
-        return self.repository.create(*args, **kwargs)
+    def create(self, entity, **kwargs):
+        return self.repository.create(entity, **kwargs)
 
 
-class AsyncGenericCreateView(AsyncCreateAPIView, GenericViewMixin[P, AsyncRepository]):
-    create_serializer: Type[Serializer]
+class AsyncGenericCreateView(AsyncCreateAPIView, GenericViewMixin[AsyncRepository]):
+    create_serializer: Optional[Type[BaseModel]] = None
 
     @classmethod
     def get_create_endpoint(cls):
-        create_serializer_type = cls.create_serializer
         param_type = cls.get_params("create")
+        create_serializer_type = cls.create_serializer or cls.serializer.subclass(
+            name=f"Create{cls.serializer.__name__}"
+        )
 
         async def endpoint(
             create_serializer: create_serializer_type,
@@ -126,8 +111,7 @@ class AsyncGenericCreateView(AsyncCreateAPIView, GenericViewMixin[P, AsyncReposi
         ):
 
             obj = await self.create(
-                create_serializer=create_serializer,
-                **params.dict(exclude_none=True),  # type: ignore[attr-defined]
+                create_serializer.dict(), **params.dict(exclude_none=True)  # type: ignore[attr-defined]
             )
             if self.return_on_create:
                 return self.serialize_response(
@@ -139,24 +123,24 @@ class AsyncGenericCreateView(AsyncCreateAPIView, GenericViewMixin[P, AsyncReposi
         return endpoint
 
     @catch_defined
-    async def create(self, *args, **kwargs):
-        return await self.repository.create(*args, **kwargs)
+    async def create(self, entity, **kwargs):
+        return await self.repository.create(entity, **kwargs)
 
 
-class GenericRetrieveView(RetrieveAPIView, GenericViewMixin[P, Repository]):
-    pk: Type[BaseModel] = PK
-
+class GenericRetrieveView(RetrieveAPIView, GenericDetailViewMixin[Repository]):
     @classmethod
     def get_retrieve_endpoint(cls):
+        param_type = cls.get_params("retrieve")
+        pk_type = cls.pk
+
         def endpoint(
             self: GenericRetrieveView = Depends(cls),
-            pk=Depends(cls.pk),
-            params: BaseModel = Depends(cls.get_params("retrieve")),
+            pk: pk_type = Depends(pk_type),
+            params: param_type = Depends(param_type),
         ) -> Endpoint:
             kwargs = {**pk.dict(exclude_none=True), **params.dict(exclude_none=True)}  # type: ignore[attr-defined]
-
             obj = self.retrieve(**kwargs)
-            if obj is None:
+            if obj is None and self.raise_on_none:
                 self.raise_not_found_error()
             return self.serialize_response("retrieve", obj)
 
@@ -164,21 +148,22 @@ class GenericRetrieveView(RetrieveAPIView, GenericViewMixin[P, Repository]):
         return endpoint
 
     @catch_defined
-    def retrieve(self, *args, **kwargs) -> Any:
-        return self.repository.retrieve(*args, **kwargs)
+    def retrieve(self, **kwargs) -> Any:
+        return self.repository.retrieve(**kwargs)
 
 
 class AsyncGenericRetrieveView(
-    AsyncRetrieveAPIView, GenericViewMixin[P, AsyncRepository]
+    AsyncRetrieveAPIView, GenericDetailViewMixin[AsyncRepository]
 ):
-    pk: Type[BaseModel] = PK
-
     @classmethod
     def get_retrieve_endpoint(cls) -> Endpoint:
+        param_type = cls.get_params("retrieve")
+        pk_type = cls.pk
+
         async def endpoint(
             self: AsyncGenericRetrieveView = Depends(cls),
-            pk: BaseModel = Depends(cls.pk),
-            params: BaseModel = Depends(cls.get_params("retrieve")),
+            pk: pk_type = Depends(pk_type),  # type: ignore[valid-type]
+            params: param_type = Depends(param_type),  # type: ignore[valid-type]
         ):
             kwargs = {**pk.dict(exclude_none=True), **params.dict(exclude_none=True)}  # type: ignore[attr-defined]
 
@@ -188,6 +173,7 @@ class AsyncGenericRetrieveView(
             return self.serialize_response("retrieve", obj)
 
         cls._patch_metadata(endpoint, cls.retrieve)
+
         return endpoint
 
     @catch_defined
@@ -195,21 +181,26 @@ class AsyncGenericRetrieveView(
         return await self.repository.retrieve(*args, **kwargs)
 
 
-class GenericUpdateView(AsyncUpdateAPIView, GenericViewMixin[P, Repository]):
-    update_serializer: Type[Serializer]
-    pk: Type[BaseModel] = PK
+class GenericUpdateView(AsyncUpdateAPIView, GenericDetailViewMixin[Repository]):
+    update_serializer: Optional[Type[BaseModel]] = None
 
     @classmethod
     def get_update_endpoint(cls) -> Endpoint:
+        param_type = cls.get_params("update")
+        pk_type = cls.pk
+        update_serializer_type = cls.update_serializer or cls.serializer.subclass(
+            name=f"Update{cls.serializer.__name__}", exclude=cls.pk.__fields__.keys()
+        )
+
         def endpoint(
-            update_serializer=Depends(cls.update_serializer),
+            update_serializer: update_serializer_type,  # type: ignore[valid-type]
             self: GenericUpdateView = Depends(cls),
-            pk: BaseModel = Depends(cls.pk),
-            params: P = Depends(cls.get_params("update")),
+            pk: pk_type = Depends(pk_type),  # type: ignore[valid-type]
+            params: param_type = Depends(param_type),  # type: ignore[valid-type]
         ):
             kwargs = {**pk.dict(exclude_none=True), **params.dict(exclude_none=True)}  # type: ignore[attr-defined]
 
-            obj = self.update(update_serializer=update_serializer, **kwargs)
+            obj = self.update(update_serializer.dict(), **kwargs)  # type: ignore[attr-defined]
             if self.return_on_update:
                 return self.serialize_response("update", obj)
             return Response(status_code=HTTP_200_OK)
@@ -222,21 +213,27 @@ class GenericUpdateView(AsyncUpdateAPIView, GenericViewMixin[P, Repository]):
         return self.repository.update(*args, **kwargs)
 
 
-class AsyncGenericUpdateView(AsyncUpdateAPIView, GenericViewMixin[P, AsyncRepository]):
-    update_serializer: Type[Serializer]
-    pk: Type[BaseModel] = PK
+class AsyncGenericUpdateView(
+    AsyncUpdateAPIView, GenericDetailViewMixin[AsyncRepository]
+):
+    update_serializer: Optional[Type[BaseModel]] = None
 
     @classmethod
     def get_update_endpoint(cls) -> Endpoint:
+        param_type = cls.get_params("update")
+        pk_type = cls.pk
+        update_serializer_type = cls.update_serializer or cls.serializer.subclass(
+            name=f"Update{cls.serializer.__name__}", exclude=cls.pk.__fields__.keys()
+        )
+
         async def endpoint(
-            self: GenericUpdateView = Depends(cls),
-            update_serializer: Serializer = Depends(cls.update_serializer),
-            pk: PK = Depends(cls.pk),
-            params: P = Depends(cls.get_params("update")),
+            update_serializer: update_serializer_type,  # type: ignore[valid-type]
+            self: AsyncGenericUpdateView = Depends(cls),
+            pk: pk_type = Depends(pk_type),  # type: ignore[valid-type]
+            params: param_type = Depends(param_type),  # type: ignore[valid-type]
         ):
             kwargs = {**pk.dict(exclude_none=True), **params.dict(exclude_none=True)}  # type: ignore[attr-defined]
-
-            obj = await self.update(update_serializer=update_serializer, **kwargs)
+            obj = await self.update(update_serializer.dict(), **kwargs)  # type: ignore[attr-defined]
             if self.return_on_update:
                 return self.serialize_response("update", obj)
             return Response(status_code=HTTP_200_OK)
@@ -245,30 +242,36 @@ class AsyncGenericUpdateView(AsyncUpdateAPIView, GenericViewMixin[P, AsyncReposi
         return endpoint
 
     @catch_defined
-    async def update(self, *args, **kwargs) -> Any:
-        return await self.repository.update(*args, **kwargs)
+    async def update(self, entity, **kwargs) -> Any:
+        return await self.repository.update(entity, **kwargs)
 
 
 class GenericPartialUpdateView(
-    AsyncPartialUpdateAPIView, GenericViewMixin[P, Repository]
+    PartialUpdateAPIView, GenericDetailViewMixin[Repository]
 ):
-    partial_update_serializer: Type[BaseModel]
-    pk: Type[BaseModel] = PK
+    partial_update_serializer: Optional[Type[BaseModel]] = None
 
     @classmethod
     def get_partial_update_endpoint(cls) -> Endpoint:
-        def endpoint(
-            self: AsyncGenericPartialUpdateView = Depends(cls),
-            partial_update_serializer: BaseModel = Depends(
-                cls.partial_update_serializer
-            ),
-            pk: BaseModel = Depends(cls.pk),
-            params: P = Depends(cls.get_params("partial_update")),
-        ):
-            kwargs = {**pk.dict(exclude_none=True), **params.dict(exclude_none=True)}  # type: ignore[attr-defined]
-            obj = self.partial_update(
-                partial_update_serializer=partial_update_serializer, **kwargs
+        param_type = cls.get_params("partial_update")
+        pk_type = cls.pk
+        partial_update_serializer_type = (
+            cls.partial_update_serializer
+            or cls.serializer.subclass(
+                name=f"PartialUpdate{cls.serializer.__name__}",
+                exclude=cls.pk.__fields__.keys(),
+                partial=True,
             )
+        )
+
+        def endpoint(
+            partial_update_serializer: partial_update_serializer_type,  # type: ignore[valid-type]
+            self=Depends(cls),
+            pk=Depends(pk_type),
+            params=Depends(param_type),
+        ):
+            kwargs = {**pk.dict(exclude_none=True), **params.dict(exclude_none=True)}
+            obj = self.partial_update(partial_update_serializer.dict(), **kwargs)  # type: ignore[attr-defined]
             if self.return_on_update:
                 return self.serialize_response("partial_update", obj)
             return Response(status_code=HTTP_200_OK)
@@ -282,20 +285,28 @@ class GenericPartialUpdateView(
 
 
 class AsyncGenericPartialUpdateView(
-    AsyncPartialUpdateAPIView, GenericViewMixin[P, AsyncRepository]
+    AsyncPartialUpdateAPIView, GenericDetailViewMixin[AsyncRepository]
 ):
-    partial_update_serializer: Type[BaseModel]
-    pk: Type[BaseModel] = PK
+    partial_update_serializer: Optional[Type[BaseModel]] = None
 
     @classmethod
     def get_partial_update_endpoint(cls):
+        param_type = cls.get_params("partial_update")
+        pk_type = cls.pk
+        partial_update_serializer_type = (
+            cls.partial_update_serializer
+            or cls.serializer.subclass(
+                name=f"PartialUpdate{cls.serializer.__name__}",
+                exclude=cls.pk.__fields__.keys(),
+                partial=True,
+            )
+        )
+
         async def endpoint(
-            self: AsyncGenericPartialUpdateView = Depends(cls),
-            partial_update_serializer: BaseModel = Depends(
-                cls.partial_update_serializer
-            ),
-            pk: BaseModel = Depends(cls.pk),
-            params: P = Depends(cls.get_params("partial_update")),
+            partial_update_serializer: partial_update_serializer_type,  # type: ignore[valid-type]
+            self=Depends(cls),
+            pk=Depends(pk_type),
+            params=Depends(param_type),
         ):
             kwargs = {**pk.dict(exclude_none=True), **params.dict(exclude_none=True)}  # type: ignore[attr-defined]
             obj = await self.partial_update(
@@ -313,17 +324,16 @@ class AsyncGenericPartialUpdateView(
         return await self.repository.partial_update(*args, **kwargs)
 
 
-class GenericDestroyView(AsyncDestroyAPIView, GenericViewMixin[P, Repository]):
-    pk: Type[BaseModel] = PK
-
+class GenericDestroyView(AsyncDestroyAPIView, GenericDetailViewMixin[Repository]):
     @classmethod
     def get_destroy_endpoint(cls) -> Endpoint:
+        param_type = cls.get_params("destroy")
+        pk_type = cls.pk
+
         def endpoint(
-            self: GenericDestroyView = Depends(cls),
-            pk: BaseModel = Depends(cls.pk),
-            params: P = Depends(cls.get_params("destroy")),
+            self=Depends(cls), pk=Depends(pk_type), params=Depends(param_type)
         ):
-            kwargs = {**pk.dict(exclude_none=True), **params.dict(exclude_none=True)}  # type: ignore[attr-defined]
+            kwargs = {**pk.dict(exclude_none=True), **params.dict(exclude_none=True)}
             self.destroy(**kwargs)
             return Response(status_code=HTTP_204_NO_CONTENT)
 
@@ -331,23 +341,22 @@ class GenericDestroyView(AsyncDestroyAPIView, GenericViewMixin[P, Repository]):
         return endpoint
 
     @catch_defined
-    def destroy(self, *args, **kwargs) -> None:
-        self.repository.delete(*args, **kwargs)
+    def destroy(self, **kwargs) -> None:
+        self.repository.delete(**kwargs)
 
 
 class AsyncGenericDestroyView(
-    AsyncDestroyAPIView, GenericViewMixin[P, AsyncRepository]
+    AsyncDestroyAPIView, GenericDetailViewMixin[AsyncRepository]
 ):
-    pk: Type[BaseModel] = PK
-
     @classmethod
     def get_destroy_endpoint(cls) -> Endpoint:
+        param_type = cls.get_params("destroy")
+        pk_type = cls.pk
+
         async def endpoint(
-            self: AsyncGenericDestroyView = Depends(cls),
-            pk: BaseModel = Depends(cls.pk),
-            params: BaseModel = Depends(cls.get_params("destroy")),
+            self=Depends(cls), pk=Depends(pk_type), params=Depends(param_type)
         ):
-            kwargs = {**pk.dict(exclude_none=True), **params.dict(exclude_none=True)}  # type: ignore[attr-defined]
+            kwargs = {**pk.dict(exclude_none=True), **params.dict(exclude_none=True)}
             await self.destroy(**kwargs)
             return Response(status_code=HTTP_204_NO_CONTENT)
 

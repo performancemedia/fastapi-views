@@ -14,6 +14,7 @@ from fastapi_views.views.api import (
     AsyncListAPIView,
     AsyncRetrieveAPIView,
 )
+from fastapi_views.views.viewsets import AsyncGenericViewSet
 
 
 @pytest_asyncio.fixture(scope="session")
@@ -80,6 +81,8 @@ class TestRetrieveView(AsyncRetrieveAPIView):
 
 @view_as_fixture("destroy_view")
 class TestDestroyView(AsyncDestroyAPIView):
+    detail_route = ""
+
     async def destroy(self) -> None:
         assert 1 == 1
 
@@ -92,28 +95,27 @@ class TestCreateView(AsyncCreateAPIView):
         return DummySerializer(x="test")
 
 
-#
-# class FakeRepository:
-#
-#     async def retrieve(self, *args, **kwargs) -> Entity | None:
-#         return DummySerializer(x="test")
-#
-#     async def create(self, *args, **kwargs) -> Entity | None:
-#         return DummySerializer(x="test")
-#
-#     async def update(self, *args, **kwargs) -> Entity | None:
-#         return DummySerializer(x="test")
-#
-#     async def partial_update(self, *args, **kwargs) -> Entity | None:
-#         return DummySerializer(x="test")
-#
-#     async def delete(self, *args, **kwargs) -> None:
-#         pass
-#
-#     async def list(self, *args, **kwargs) -> list[Entity]:
-#         return [DummySerializer(x="test")]
-#
-#
-# @view_as_fixture("generic_viewset")
-# class TestGenericViewSet(AsyncGenericViewSet):
-#     repository = FakeRepository
+class FakeRepository:
+    async def retrieve(self, *args, **kwargs):
+        return DummySerializer(x="test")
+
+    async def create(self, *args, **kwargs):
+        return DummySerializer(x="test")
+
+    async def update(self, *args, **kwargs):
+        return DummySerializer(x="test")
+
+    async def partial_update(self, *args, **kwargs):
+        return DummySerializer(x="test")
+
+    async def delete(self, *args, **kwargs) -> None:
+        pass
+
+    async def list(self, *args, **kwargs):
+        return [DummySerializer(x="test")]
+
+
+@view_as_fixture("generic_viewset")
+class TestGenericViewSet(AsyncGenericViewSet):
+    repository = FakeRepository()
+    serializer = DummySerializer
