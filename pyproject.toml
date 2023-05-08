@@ -65,7 +65,7 @@ commit_message = "Bump version: {version}"
 tag_commit = false
 
 [tool.mypy]
-python_version = 3.9
+python_version = 3.8
 ignore_missing_imports = true
 no_site_packages = true
 
