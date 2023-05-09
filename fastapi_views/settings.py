@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from pydantic import BaseSettings, Field, PyObject
 
@@ -20,11 +20,11 @@ class APISettings(BaseSettings):
     enable_error_handlers: bool = Field(True, env="ERROR_HANDLERS_ENABLE")
     enable_prometheus_middleware: bool = Field(True, env="PROMETHEUS_MIDDLEWARE_ENABLE")
     healthcheck: Optional[PyObject] = None
-    side_services: List[PyObject] = []
+    side_services: list[PyObject] = []
     simplify_openapi_ids: bool = True
 
     @property
-    def fastapi_kwargs(self) -> Dict[str, Any]:
+    def fastapi_kwargs(self) -> dict[str, Any]:
         """
         This returns a dictionary of the most commonly used keyword arguments when initializing a FastAPI instance
         If `self.disable_docs` is True, the various docs-related arguments are disabled, preventing your spec from being
@@ -46,7 +46,7 @@ class APISettings(BaseSettings):
         return fastapi_kwargs
 
     @property
-    def config_kwargs(self) -> Dict[str, Any]:
+    def config_kwargs(self) -> dict[str, Any]:
         return {
             "enable_error_handlers": self.enable_error_handlers,
             "healthcheck": self.healthcheck,

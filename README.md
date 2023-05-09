@@ -13,7 +13,7 @@
 *FastAPI Class Views and utilities*
 
 ---
-Version: 0.0.2
+Version: 0.0.3
 
 Documentation: https://performancemedia.github.io/fastapi-views/
 
@@ -33,9 +33,8 @@ pip install fastapi-views
 from typing import Optional
 from uuid import UUID
 
-from fastapi_views import Serializer
-from fastapi_views.views.api import L
-from fastapi_views.views.viewsets import APIViewSet
+from fastapi_views import Serializer, ViewRouter
+from fastapi_views.views.viewsets import AsyncAPIViewSet
 
 
 class ItemSchema(Serializer):
@@ -47,10 +46,11 @@ class ItemSchema(Serializer):
 items = {}
 
 
-class MyView(APIViewSet):
+class MyViewSet(AsyncAPIViewSet):
+    api_component_name = "Item"
     serializer = ItemSchema
-
-    async def list(self, *args, **kwargs) -> L:
+    
+    async def list(self):
         return list(items.values())
 
     async def create(self, item: ItemSchema) -> ItemSchema:
@@ -66,6 +66,11 @@ class MyView(APIViewSet):
     async def destroy(self, id: UUID) -> None:
         items.pop(id, None)
 
+router = ViewRouter(prefix="/items")
+router.register_view(MyViewSet)
+# in app.py
+# app.include_router(router)
+
 ```
 
 ## Features
@@ -74,6 +79,8 @@ class MyView(APIViewSet):
   - APIViews
   - GenericViews
   - ViewSets
+- Both async and sync function support
+- No dependencies on ORM
 - Openapi id simplification
 - 'Smart' and fast serialization using orjson
 - Http Problem Details implementation

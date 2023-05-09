@@ -8,14 +8,19 @@ from .errors import (
     ServiceUnavailableAPIError,
     errors,
 )
+from .models import APIModel, CamelCaseAPIModel, CamelCaseSerializer, Serializer
 from .response import JsonResponse
 from .routers import ViewRouter, register_view
-from .serializer import Serializer
+from .settings import APISettings
 
 __all__ = [
     "__version__",
     "configure_app",
+    "APISettings",
     "APIError",
+    "APIModel",
+    "CamelCaseAPIModel",
+    "CamelCaseSerializer",
     "ConflictAPIError",
     "ErrorDetails",
     "NotFoundAPIError",
