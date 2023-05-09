@@ -68,14 +68,13 @@ class MyViewSet(AsyncAPIViewSet):
 
 ```
 
-## Features
+## Installation
 
-- Class Based Views
-  - APIViews
-  - GenericViews
-  - ViewSets
-- Openapi id simplification
-- 'Smart' and fast serialization using orjson
-- Http Problem Details implementation
-- Automatic prometheus metrics exporter
-- Pluggable healthcheck helper
+```shell
+pip install fastapi-views
+```
+or
+
+```shell
+poetry add fastapi-views
+```

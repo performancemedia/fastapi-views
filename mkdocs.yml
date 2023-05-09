@@ -19,7 +19,7 @@ repo_name: performance-media/fastapi-views
 repo_url: https://github.com/performancemedia/fastapi-views
 nav:
   - "FastAPI Views": index.md
-  - "views": views.md
+  - "Features": features.md
 
 markdown_extensions:
   - pymdownx.highlight:
