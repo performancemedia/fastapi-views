@@ -1,5 +1,5 @@
 import random
-from typing import Optional, Type, TypeVar
+from typing import Optional, TypeVar
 from uuid import UUID
 
 from fastapi import FastAPI
@@ -18,7 +18,7 @@ class ItemSchema(Serializer):
 
 items: dict[UUID, ItemSchema] = {}
 
-P = TypeVar("P", bound=Type[BaseModel])
+P = TypeVar("P", bound=type[BaseModel])
 
 
 class MyViewSet(AsyncAPIViewSet):

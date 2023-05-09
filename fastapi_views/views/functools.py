@@ -1,6 +1,6 @@
 import asyncio
 import functools
-from typing import Any, Callable, Tuple, Type, Union
+from typing import Any, Callable, Union
 
 from fastapi_views.views.mixins import ErrorHandlerMixin
 
@@ -23,7 +23,7 @@ def route(**kwargs: Any) -> Callable:
     return wrapper
 
 
-def catch(exc_type: Union[Type[Exception], Tuple[Type[Exception]]], **kw: Any):
+def catch(exc_type: Union[type[Exception], tuple[type[Exception]]], **kw: Any):
     def wrapper(func):
         @functools.wraps(func)
         async def wrapped_async(self, *args, **kwargs):

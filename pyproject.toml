@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = "fastapi_views"}]
 
 [tool.poetry.dependencies]
-python = ">=3.8.1,<4.0"
+python = ">=3.9,<4.0"
 fastapi = "^0.95.0"
 orjson = "<=3.8.9"
 uvicorn = "^0.22.0"
@@ -65,7 +65,7 @@ commit_message = "Bump version: {version}"
 tag_commit = false
 
 [tool.mypy]
-python_version = 3.8
+python_version = 3.9
 ignore_missing_imports = true
 no_site_packages = true
 

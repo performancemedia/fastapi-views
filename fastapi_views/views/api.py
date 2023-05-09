@@ -1,18 +1,13 @@
 import asyncio
 import inspect
 from abc import ABC, abstractmethod
+from collections.abc import Awaitable, Generator, Iterator
 from typing import (
     TYPE_CHECKING,
     Any,
-    Awaitable,
     Callable,
-    Dict,
-    Generator,
     Generic,
-    Iterator,
-    List,
     Optional,
-    Type,
     TypeVar,
     Union,
     get_type_hints,
@@ -33,8 +28,8 @@ from ..response import JsonResponse
 from .functools import VIEWSET_ROUTE_FLAG
 from .mixins import DetailViewMixin, ErrorHandlerMixin
 
-S = TypeVar("S", bound=Type[Serializer])
-P = Iterator[Dict[str, Any]]
+S = TypeVar("S", bound=type[Serializer])
+P = Iterator[dict[str, Any]]
 
 Endpoint = Callable[..., Union[Response, Awaitable[Response]]]
 
@@ -45,7 +40,7 @@ class View(ABC):
     """
 
     api_component_name: str
-    default_response_class: Type[Response] = JsonResponse
+    default_response_class: type[Response] = JsonResponse
 
     def __init__(self, request: Request, response: Response) -> None:
         self.request = request
@@ -95,7 +90,7 @@ class View(ABC):
     @classmethod
     def get_api_action(
         cls, endpoint: Callable, prefix: str = "", path: str = "", **kwargs
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         kw = getattr(endpoint, "kwargs", {})
         kwargs.update(kw)
         path = kwargs.get("path", path)
@@ -118,7 +113,7 @@ class View(ABC):
     @classmethod
     def _patch_endpoint_signature(cls, endpoint, method: Callable) -> None:
         old_signature = inspect.signature(method)
-        old_parameters: List[inspect.Parameter] = list(
+        old_parameters: list[inspect.Parameter] = list(
             old_signature.parameters.values()
         )
         old_first_parameter = old_parameters[0]
@@ -175,7 +170,7 @@ class BaseListAPIView(APIView):
     @classmethod
     def get_api_actions(cls, prefix: str = ""):
         response_model = (
-            List[cls.get_serializer("list")]  # type: ignore
+            list[cls.get_serializer("list")]  # type: ignore
             if cls.serializer_to_list
             else cls.get_serializer("list")
         )

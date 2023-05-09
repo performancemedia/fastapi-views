@@ -1,6 +1,7 @@
 import copy
+from collections.abc import Iterable
 from functools import partial
-from typing import Any, Iterable, Optional, Set, Type, cast
+from typing import Any, Optional, cast
 
 from pydantic import BaseModel
 
@@ -20,9 +21,9 @@ class APIModel(BaseModel):
     def subclass(
         cls,
         name: Optional[str] = None,
-        exclude: Optional[Set[str]] = None,
+        exclude: Optional[set[str]] = None,
         partial: bool = False,
-    ) -> Type[BaseModel]:
+    ) -> type[BaseModel]:
         _exclude = exclude or set()
         new_cls = type(
             name or f"Partial{cls.__name__}",
@@ -35,7 +36,7 @@ class APIModel(BaseModel):
                 }
             },
         )
-        return cast(Type[BaseModel], new_cls)
+        return cast(type[BaseModel], new_cls)
 
     class Config:
         use_enum_values = True

@@ -1,4 +1,4 @@
-from typing import Any, Optional, Type
+from typing import Any, Optional
 
 from fastapi import Depends, Response
 from pydantic import BaseModel
@@ -63,7 +63,7 @@ class AsyncGenericListView(AsyncListAPIView, GenericViewMixin[AsyncRepository]):
 
 
 class GenericCreateView(CreateAPIView, GenericViewMixin[Repository]):
-    create_serializer: Optional[Type[BaseModel]] = None
+    create_serializer: Optional[type[BaseModel]] = None
 
     @classmethod
     def get_create_endpoint(cls):
@@ -95,7 +95,7 @@ class GenericCreateView(CreateAPIView, GenericViewMixin[Repository]):
 
 
 class AsyncGenericCreateView(AsyncCreateAPIView, GenericViewMixin[AsyncRepository]):
-    create_serializer: Optional[Type[BaseModel]] = None
+    create_serializer: Optional[type[BaseModel]] = None
 
     @classmethod
     def get_create_endpoint(cls):
@@ -182,7 +182,7 @@ class AsyncGenericRetrieveView(
 
 
 class GenericUpdateView(AsyncUpdateAPIView, GenericDetailViewMixin[Repository]):
-    update_serializer: Optional[Type[BaseModel]] = None
+    update_serializer: Optional[type[BaseModel]] = None
 
     @classmethod
     def get_update_endpoint(cls) -> Endpoint:
@@ -216,7 +216,7 @@ class GenericUpdateView(AsyncUpdateAPIView, GenericDetailViewMixin[Repository]):
 class AsyncGenericUpdateView(
     AsyncUpdateAPIView, GenericDetailViewMixin[AsyncRepository]
 ):
-    update_serializer: Optional[Type[BaseModel]] = None
+    update_serializer: Optional[type[BaseModel]] = None
 
     @classmethod
     def get_update_endpoint(cls) -> Endpoint:
@@ -249,7 +249,7 @@ class AsyncGenericUpdateView(
 class GenericPartialUpdateView(
     PartialUpdateAPIView, GenericDetailViewMixin[Repository]
 ):
-    partial_update_serializer: Optional[Type[BaseModel]] = None
+    partial_update_serializer: Optional[type[BaseModel]] = None
 
     @classmethod
     def get_partial_update_endpoint(cls) -> Endpoint:
@@ -287,7 +287,7 @@ class GenericPartialUpdateView(
 class AsyncGenericPartialUpdateView(
     AsyncPartialUpdateAPIView, GenericDetailViewMixin[AsyncRepository]
 ):
-    partial_update_serializer: Optional[Type[BaseModel]] = None
+    partial_update_serializer: Optional[type[BaseModel]] = None
 
     @classmethod
     def get_partial_update_endpoint(cls):
