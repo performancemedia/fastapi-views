@@ -23,6 +23,8 @@ from .mixins import GenericDetailViewMixin, GenericViewMixin
 
 
 class GenericListView(ListAPIView, GenericViewMixin[Repository]):
+    """Sync generic list view"""
+
     @classmethod
     def get_list_endpoint(cls) -> Endpoint:
         param_type = cls.get_params("list")
@@ -43,6 +45,8 @@ class GenericListView(ListAPIView, GenericViewMixin[Repository]):
 
 
 class AsyncGenericListView(AsyncListAPIView, GenericViewMixin[AsyncRepository]):
+    """Async generic list view"""
+
     @classmethod
     def get_list_endpoint(cls):
         param_type = cls.get_params("list")
@@ -63,6 +67,8 @@ class AsyncGenericListView(AsyncListAPIView, GenericViewMixin[AsyncRepository]):
 
 
 class GenericCreateView(CreateAPIView, GenericViewMixin[Repository]):
+    """Sync generic create view"""
+
     create_serializer: Optional[type[BaseModel]] = None
 
     @classmethod
@@ -95,6 +101,8 @@ class GenericCreateView(CreateAPIView, GenericViewMixin[Repository]):
 
 
 class AsyncGenericCreateView(AsyncCreateAPIView, GenericViewMixin[AsyncRepository]):
+    """Async generic create view"""
+
     create_serializer: Optional[type[BaseModel]] = None
 
     @classmethod
@@ -128,6 +136,8 @@ class AsyncGenericCreateView(AsyncCreateAPIView, GenericViewMixin[AsyncRepositor
 
 
 class GenericRetrieveView(RetrieveAPIView, GenericDetailViewMixin[Repository]):
+    """Sync generic retrieve view"""
+
     @classmethod
     def get_retrieve_endpoint(cls):
         param_type = cls.get_params("retrieve")
@@ -155,6 +165,8 @@ class GenericRetrieveView(RetrieveAPIView, GenericDetailViewMixin[Repository]):
 class AsyncGenericRetrieveView(
     AsyncRetrieveAPIView, GenericDetailViewMixin[AsyncRepository]
 ):
+    """Async generic retrieve view"""
+
     @classmethod
     def get_retrieve_endpoint(cls) -> Endpoint:
         param_type = cls.get_params("retrieve")
@@ -182,6 +194,8 @@ class AsyncGenericRetrieveView(
 
 
 class GenericUpdateView(AsyncUpdateAPIView, GenericDetailViewMixin[Repository]):
+    """Sync generic update view"""
+
     update_serializer: Optional[type[BaseModel]] = None
 
     @classmethod
@@ -216,6 +230,8 @@ class GenericUpdateView(AsyncUpdateAPIView, GenericDetailViewMixin[Repository]):
 class AsyncGenericUpdateView(
     AsyncUpdateAPIView, GenericDetailViewMixin[AsyncRepository]
 ):
+    """Async generic update view"""
+
     update_serializer: Optional[type[BaseModel]] = None
 
     @classmethod
@@ -249,6 +265,8 @@ class AsyncGenericUpdateView(
 class GenericPartialUpdateView(
     PartialUpdateAPIView, GenericDetailViewMixin[Repository]
 ):
+    """Sync generic partial update view"""
+
     partial_update_serializer: Optional[type[BaseModel]] = None
 
     @classmethod
@@ -287,6 +305,8 @@ class GenericPartialUpdateView(
 class AsyncGenericPartialUpdateView(
     AsyncPartialUpdateAPIView, GenericDetailViewMixin[AsyncRepository]
 ):
+    """Async generic partial update view"""
+
     partial_update_serializer: Optional[type[BaseModel]] = None
 
     @classmethod
@@ -325,6 +345,8 @@ class AsyncGenericPartialUpdateView(
 
 
 class GenericDestroyView(AsyncDestroyAPIView, GenericDetailViewMixin[Repository]):
+    """Sync generic destroy view"""
+
     @classmethod
     def get_destroy_endpoint(cls) -> Endpoint:
         param_type = cls.get_params("destroy")
@@ -348,6 +370,8 @@ class GenericDestroyView(AsyncDestroyAPIView, GenericDetailViewMixin[Repository]
 class AsyncGenericDestroyView(
     AsyncDestroyAPIView, GenericDetailViewMixin[AsyncRepository]
 ):
+    """Async generic destroy view"""
+
     @classmethod
     def get_destroy_endpoint(cls) -> Endpoint:
         param_type = cls.get_params("destroy")

@@ -3,7 +3,7 @@
 ### Class Based Views
 
 - Basic `View` and `APIView` classes for custom endpoints
-- APIViews (async classes are prefixed with `Async`:
+- APIViews (async classes are prefixed with `Async`)
   - ListAPIView
   - CreateAPIView
   - RetrieveAPIView
