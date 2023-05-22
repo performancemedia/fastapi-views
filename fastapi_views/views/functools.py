@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import asyncio
 import functools
-from typing import Any, Callable, Union
+from typing import TYPE_CHECKING, Any, Callable
 
-from fastapi_views.views.mixins import ErrorHandlerMixin
+if TYPE_CHECKING:
+    from fastapi_views.views.mixins import ErrorHandlerMixin
 
 VIEWSET_ROUTE_FLAG = "_is_viewset_route"
 
@@ -15,15 +18,15 @@ def override(**kwargs):
     return wrapper
 
 
-def route(**kwargs: Any) -> Callable:
+def route(path: str, **kwargs: Any) -> Callable:
     def wrapper(func: Callable):
         setattr(func, VIEWSET_ROUTE_FLAG, True)
-        return override(**kwargs)(func)
+        return override(path=path, **kwargs)(func)
 
     return wrapper
 
 
-def catch(exc_type: Union[type[Exception], tuple[type[Exception]]], **kw: Any):
+def catch(exc_type: type[Exception] | tuple[type[Exception]], **kw: Any):
     def wrapper(func):
         @functools.wraps(func)
         async def wrapped_async(self, *args, **kwargs):

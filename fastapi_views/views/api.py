@@ -2,16 +2,7 @@ import asyncio
 import inspect
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Generator, Iterator
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Generic,
-    Optional,
-    TypeVar,
-    Union,
-    get_type_hints,
-)
+from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypeVar, Union
 
 from fastapi import Depends, Request, Response
 from starlette.status import (
@@ -37,6 +28,16 @@ Endpoint = Callable[..., Union[Response, Awaitable[Response]]]
 class View(ABC):
     """
     Basic View Class
+    Usage:
+    from fastapi_views.views.functools import get, post, delete
+
+    class MyCustomViewClass(View):
+
+        @get("")
+        async def get_items(self, ...):
+            ...
+
+        @post(path="")
     """
 
     api_component_name: str
@@ -99,7 +100,7 @@ class View(ABC):
         kwargs.setdefault("name", endpoint.__name__)
         endpoint_name = kwargs["name"]
         kwargs.setdefault("methods", ["GET"])
-        kwargs.setdefault("response_model", get_type_hints(endpoint).get("return"))
+        # kwargs.setdefault("response_model", get_type_hints(endpoint).get("return"))
         kwargs.setdefault("operation_id", f"{cls.get_slug_name()}_{endpoint_name}")
 
         return kwargs
@@ -186,6 +187,8 @@ class BaseListAPIView(APIView):
 
 
 class AsyncListAPIView(BaseListAPIView, ABC):
+    """Async list api view"""
+
     @classmethod
     def get_list_endpoint(cls) -> Endpoint:
         async def endpoint(self: AsyncListAPIView, *args, **kwargs):
@@ -205,6 +208,8 @@ class AsyncListAPIView(BaseListAPIView, ABC):
 
 
 class ListAPIView(BaseListAPIView, ABC):
+    """Sync list api view"""
+
     @classmethod
     def get_list_endpoint(cls) -> Endpoint:
         def endpoint(self: ListAPIView, *args, **kwargs):
@@ -246,6 +251,8 @@ class BaseRetrieveAPIView(APIView, DetailViewMixin):
 
 
 class RetrieveAPIView(BaseRetrieveAPIView):
+    """Sync retrieve api view"""
+
     @classmethod
     def get_retrieve_endpoint(cls) -> Endpoint:
         def endpoint(self: RetrieveAPIView, *args, **kwargs):
@@ -267,6 +274,8 @@ class RetrieveAPIView(BaseRetrieveAPIView):
 
 
 class AsyncRetrieveAPIView(BaseRetrieveAPIView):
+    """Async retrieve api view"""
+
     @classmethod
     def get_retrieve_endpoint(cls) -> Endpoint:
         async def endpoint(self: AsyncRetrieveAPIView, *args, **kwargs):
@@ -311,6 +320,8 @@ class BaseCreateAPIView(APIView):
 
 
 class CreateAPIView(BaseCreateAPIView):
+    """Sync create api view"""
+
     @classmethod
     def get_create_endpoint(cls) -> Endpoint:
         def endpoint(self: CreateAPIView, *args, **kwargs):
@@ -333,6 +344,8 @@ class CreateAPIView(BaseCreateAPIView):
 
 
 class AsyncCreateAPIView(BaseCreateAPIView):
+    """Async create api view"""
+
     @classmethod
     def get_create_endpoint(cls) -> Endpoint:
         async def endpoint(self: AsyncCreateAPIView, *args, **kwargs):
@@ -379,6 +392,8 @@ class BaseUpdateAPIView(APIView, DetailViewMixin):
 
 
 class UpdateAPIView(BaseUpdateAPIView):
+    """Sync update api view"""
+
     @classmethod
     def get_update_endpoint(cls) -> Endpoint:
         def endpoint(self, *args, **kwargs):
@@ -403,6 +418,8 @@ class UpdateAPIView(BaseUpdateAPIView):
 
 
 class AsyncUpdateAPIView(BaseUpdateAPIView):
+    """Async update api view"""
+
     @classmethod
     def get_update_endpoint(cls) -> Endpoint:
         async def endpoint(self, *args, **kwargs):
@@ -451,6 +468,8 @@ class BasePartialUpdateAPIView(APIView, DetailViewMixin):
 
 
 class PartialUpdateAPIView(BasePartialUpdateAPIView):
+    """Sync partial update api view"""
+
     @classmethod
     def get_partial_update_endpoint(cls) -> Endpoint:
         def endpoint(self, *args, **kwargs):
@@ -474,6 +493,8 @@ class PartialUpdateAPIView(BasePartialUpdateAPIView):
 
 
 class AsyncPartialUpdateAPIView(BasePartialUpdateAPIView):
+    """Async partial update api view"""
+
     @classmethod
     def get_partial_update_endpoint(cls) -> Endpoint:
         async def endpoint(self, *args, **kwargs):
@@ -518,6 +539,8 @@ class BaseDestroyAPIView(APIView, DetailViewMixin):
 
 
 class DestroyAPIView(BaseDestroyAPIView):
+    """Sync destroy api view"""
+
     @classmethod
     def get_destroy_endpoint(cls) -> Endpoint:
         def endpoint(self, *args, **kwargs):
@@ -537,6 +560,8 @@ class DestroyAPIView(BaseDestroyAPIView):
 
 
 class AsyncDestroyAPIView(BaseDestroyAPIView):
+    """Async destroy api view"""
+
     @classmethod
     def get_destroy_endpoint(cls) -> Endpoint:
         async def endpoint(self, *args, **kwargs):

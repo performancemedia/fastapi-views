@@ -27,67 +27,67 @@ from .generics import (
 
 
 class ReadOnlyAPIViewSet(ListAPIView, RetrieveAPIView, ABC):
-    ...
+    """ReadOnlyAPIViewSet"""
 
 
 class AsyncReadOnlyAPIViewSet(AsyncListAPIView, AsyncRetrieveAPIView, ABC):
-    ...
+    """AsyncReadOnlyAPIViewSet"""
 
 
 class ListCreateAPIViewSet(ListAPIView, CreateAPIView, ABC):
-    ...
+    """ListCreateAPIViewSet"""
 
 
 class AsyncListCreateAPIViewSet(AsyncListAPIView, AsyncCreateAPIView, ABC):
-    ...
+    """AsyncListCreateAPIViewSet"""
 
 
 class RetrieveUpdateAPIViewSet(RetrieveAPIView, UpdateAPIView, ABC):
-    ...
+    """RetrieveUpdateAPIViewSet"""
 
 
 class AsyncRetrieveUpdateAPIViewSet(AsyncRetrieveAPIView, AsyncUpdateAPIView, ABC):
-    ...
+    """AsyncRetrieveUpdateAPIViewSet"""
 
 
 class RetrieveUpdateDestroyAPIViewSet(
     RetrieveAPIView, UpdateAPIView, DestroyAPIView, ABC
 ):
-    ...
+    """RetrieveUpdateDestroyAPIViewSet"""
 
 
 class AsyncRetrieveUpdateDestroyAPIViewSet(
     AsyncRetrieveAPIView, AsyncUpdateAPIView, AsyncDestroyAPIView, ABC
 ):
-    ...
+    """AsyncRetrieveUpdateDestroyAPIViewSet"""
 
 
 class ListRetrieveUpdateDestroyAPIViewSet(
     ListAPIView, RetrieveAPIView, UpdateAPIView, DestroyAPIView, ABC
 ):
-    ...
+    """ListRetrieveUpdateDestroyAPIViewSet"""
 
 
 class AsyncListRetrieveUpdateDestroyAPIViewSet(
     AsyncListAPIView, AsyncRetrieveAPIView, AsyncUpdateAPIView, AsyncDestroyAPIView, ABC
 ):
-    ...
+    """AsyncListRetrieveUpdateDestroyAPIViewSet"""
 
 
 class ListCreateDestroyAPIViewSet(ListAPIView, CreateAPIView, DestroyAPIView, ABC):
-    ...
+    """ListCreateDestroyAPIViewSet"""
 
 
 class AsyncListCreateDestroyAPIViewSet(
     AsyncListAPIView, AsyncCreateAPIView, AsyncDestroyAPIView, ABC
 ):
-    ...
+    """AsyncListCreateDestroyAPIViewSet"""
 
 
 class APIViewSet(
     ListAPIView, CreateAPIView, RetrieveAPIView, UpdateAPIView, DestroyAPIView, ABC
 ):
-    ...
+    """APIViewSet"""
 
 
 class AsyncAPIViewSet(
@@ -98,51 +98,51 @@ class AsyncAPIViewSet(
     AsyncDestroyAPIView,
     ABC,
 ):
-    ...
+    """AsyncAPIViewSet"""
 
 
 class GenericReadOnlyViewSet(GenericListView, GenericRetrieveView, ABC):
-    ...
+    """GenericReadOnlyViewSet"""
 
 
 class AsyncGenericReadOnlyViewSet(AsyncGenericListView, AsyncGenericRetrieveView, ABC):
-    ...
+    """AsyncGenericReadOnlyViewSet"""
 
 
 class GenericListCreateViewSet(GenericListView, GenericCreateView, ABC):
-    ...
+    """GenericListCreateViewSet"""
 
 
 class AsyncGenericListCreateViewSet(AsyncGenericListView, AsyncGenericCreateView, ABC):
-    ...
+    """AsyncGenericListCreateViewSet"""
 
 
 class GenericRetrieveUpdateViewSet(GenericRetrieveView, GenericUpdateView, ABC):
-    ...
+    """GenericRetrieveUpdateViewSet"""
 
 
 class AsyncGenericRetrieveUpdateViewSet(
     AsyncGenericRetrieveView, AsyncGenericUpdateView, ABC
 ):
-    ...
+    """AsyncGenericRetrieveUpdateViewSet"""
 
 
 class GenericRetrieveUpdateDestroyAPIViewSet(
     GenericRetrieveView, GenericUpdateView, GenericDestroyView, ABC
 ):
-    ...
+    """GenericRetrieveUpdateDestroyAPIViewSet"""
 
 
 class AsyncGenericRetrieveUpdateDestroyAPIViewSet(
     AsyncGenericRetrieveView, AsyncGenericUpdateView, AsyncGenericDestroyView, ABC
 ):
-    ...
+    """AsyncGenericRetrieveUpdateDestroyAPIViewSet"""
 
 
 class GenericListRetrieveUpdateDeleteViewSet(
     GenericListView, GenericRetrieveView, GenericUpdateView, GenericDestroyView, ABC
 ):
-    ...
+    """GenericListRetrieveUpdateDeleteViewSet"""
 
 
 class AsyncGenericListRetrieveUpdateDeleteViewSet(
@@ -152,7 +152,7 @@ class AsyncGenericListRetrieveUpdateDeleteViewSet(
     AsyncGenericDestroyView,
     ABC,
 ):
-    ...
+    """AsyncGenericListRetrieveUpdateDeleteViewSet"""
 
 
 class GenericViewSet(
@@ -163,7 +163,7 @@ class GenericViewSet(
     GenericDestroyView,
     ABC,
 ):
-    ...
+    """GenericViewSet"""
 
 
 class AsyncGenericViewSet(
@@ -174,4 +174,4 @@ class AsyncGenericViewSet(
     AsyncGenericDestroyView,
     ABC,
 ):
-    ...
+    """AsyncGenericViewSet"""
