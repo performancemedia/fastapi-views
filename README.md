@@ -13,7 +13,7 @@
 *FastAPI Class Views and utilities*
 
 ---
-Version: 0.0.4
+Version: 0.0.5
 
 Documentation: https://performancemedia.github.io/fastapi-views/
 
