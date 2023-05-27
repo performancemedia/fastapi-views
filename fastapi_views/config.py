@@ -8,6 +8,12 @@ from .openapi import simplify_operation_ids
 from .prometheus import add_prometheus_middleware
 from .settings import APISettings
 
+try:
+    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
+except ImportError:
+    FastAPIInstrumentor = None
+
 
 def configure_app(
     app: FastAPI,
@@ -15,6 +21,7 @@ def configure_app(
     healthcheck: HealthCheck | None = None,
     enable_prometheus_middleware: bool = True,
     simplify_openapi_ids: bool = True,
+    **tracing_opts,
 ):
     if enable_error_handlers:
         add_error_handlers(app)
@@ -30,6 +37,9 @@ def configure_app(
         add_prometheus_middleware(app)
     if simplify_openapi_ids:
         simplify_operation_ids(app)
+
+    if FastAPIInstrumentor is not None:
+        FastAPIInstrumentor.instrument_app(app, **tracing_opts)
 
 
 def create_fastapi_app(settings: APISettings, **kwargs) -> FastAPI:
