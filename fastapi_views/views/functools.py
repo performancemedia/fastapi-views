@@ -18,6 +18,9 @@ def override(**kwargs):
     return wrapper
 
 
+annotate = override
+
+
 def route(path: str, **kwargs: Any) -> Callable:
     def wrapper(func: Callable):
         setattr(func, VIEWSET_ROUTE_FLAG, True)
@@ -54,14 +57,14 @@ def catch_defined(func):
     async def wrapped_async(self: ErrorHandlerMixin, *args, **kwargs):
         try:
             return await func(self, *args, **kwargs)
-        except self.catches as e:
+        except self.get_exception_class() as e:
             self.handle_error(type(e), e)
 
     @functools.wraps(func)
     def wrapped_sync(self: ErrorHandlerMixin, *args, **kwargs):
         try:
             return func(self, *args, **kwargs)
-        except self.catches as e:
+        except self.get_exception_class() as e:
             self.handle_error(type(e), e)
 
     if asyncio.iscoroutinefunction(func):

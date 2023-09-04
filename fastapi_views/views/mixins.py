@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any, Callable, Generic, TypeVar, Union
 from uuid import UUID
 
@@ -37,8 +38,7 @@ class ErrorHandlerMixin:
     throws: dict[type[Exception], dict[str, Any]] = {}
 
     def get_error_message(self, key: type[Exception]) -> dict[str, Any]:
-
-        return self.catch.get(
+        return self.throws.get(
             key, {"detail": "Something went wrong", "status": HTTP_400_BAD_REQUEST}
         )
 
@@ -53,9 +53,8 @@ class ErrorHandlerMixin:
         kwargs.setdefault("detail", str(exc))
         raise APIError(**kwargs)
 
-    @property
-    def catches(self):
-        return tuple(self.catch.keys()) or _Sentinel
+    def get_exception_class(self):
+        return tuple(self.throws.keys()) or _Sentinel
 
 
 class IdModel(BaseModel):

@@ -1,6 +1,13 @@
 from __future__ import annotations
 
-from starlette.status import HTTP_400_BAD_REQUEST
+from starlette.status import (
+    HTTP_400_BAD_REQUEST,
+    HTTP_401_UNAUTHORIZED,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+    HTTP_429_TOO_MANY_REQUESTS,
+)
 
 
 class APIError(Exception):
@@ -67,5 +74,5 @@ class Unauthorized(APIError):
 class Forbidden(APIError):
     def __init__(self, detail: str, instance: str | None = None):
         super().__init__(
-            detail, title="Forbidden", status=HTTP_401_UNAUTHORIZED, instance=instance
+            detail, title="Forbidden", status=HTTP_403_FORBIDDEN, instance=instance
         )

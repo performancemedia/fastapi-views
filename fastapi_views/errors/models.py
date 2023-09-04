@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from starlette.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND,
@@ -34,6 +34,10 @@ class ErrorDetails(BaseModel):
         return cls(
             detail=str(exc), type=type(exc).__name__, status=status_code, **kwargs
         )
+
+    @validator("detail", always=True, pre=True)
+    def validate_detail(cls, v):
+        return v or "Internal Server Error"
 
     @classmethod
     def get_status(cls) -> int:
