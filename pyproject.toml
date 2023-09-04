@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fastapi-views"
-version = "0.0.5"
+version = "0.0.6"
 description = "FastAPI Class Views and utilities"
 authors = ["Radzim Kowalow <radzim.kowalow@performance-media.pl>"]
 readme = "README.md"
@@ -32,6 +32,7 @@ flake8-cognitive-complexity = "^0.1.0"
 httpx = "^0.24.0"
 asgi-lifespan = "^2.1.0"
 mypy = "^1.2.0"
+apscheduler = "^3.10.1"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "^1.4.2"

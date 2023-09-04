@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any, Callable, Generic, TypeVar, Union
 from uuid import UUID
 
@@ -34,23 +35,26 @@ class _Sentinel(Exception):
 class ErrorHandlerMixin:
     request: Request
 
-    catch: dict[type[Exception], dict[str, Any]] = {}
+    throws: dict[type[Exception], dict[str, Any]] = {}
 
-    def get_error_message(self, key: type[Exception]):
-        return self.catch.get(
+    def get_error_message(self, key: type[Exception]) -> dict[str, Any]:
+        return self.throws.get(
             key, {"detail": "Something went wrong", "status": HTTP_400_BAD_REQUEST}
         )
 
     def handle_error(self, exc_type: type[Exception], exc: Exception, **kwargs):
-        kwargs.update(**self.get_error_message(exc_type))
+        kw = self.get_error_message(exc_type)
+        if isinstance(kw, str):
+            kwargs["detail"] = kw
+        elif isinstance(kw, Mapping):
+            kwargs.update(kw)
         kwargs.setdefault("instance", self.request.url.path)
         kwargs.setdefault("title", exc_type.__name__)
         kwargs.setdefault("detail", str(exc))
         raise APIError(**kwargs)
 
-    @property
-    def catches(self):
-        return tuple(self.catch.keys()) or _Sentinel
+    def get_exception_class(self):
+        return tuple(self.throws.keys()) or _Sentinel
 
 
 class IdModel(BaseModel):
