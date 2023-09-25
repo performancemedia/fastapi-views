@@ -6,9 +6,9 @@ from uuid import UUID
 
 from fastapi import Request
 from pydantic import BaseModel
-from starlette.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
+from starlette.status import HTTP_400_BAD_REQUEST
 
-from ..errors import APIError
+from ..errors.exceptions import APIError, NotFound
 from ..types import AsyncRepository, Repository
 
 R = TypeVar("R", bound=Union[AsyncRepository, Repository])
@@ -25,7 +25,7 @@ class DetailViewMixin:
         return cls.detail_route
 
     def raise_not_found_error(self):
-        raise APIError(f"{self.get_name()} does not exist.", status=HTTP_404_NOT_FOUND)
+        raise NotFound(f"{self.get_name()} does not exist.")
 
 
 class _Sentinel(Exception):
