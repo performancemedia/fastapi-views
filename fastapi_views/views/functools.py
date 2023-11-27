@@ -12,7 +12,7 @@ VIEWSET_ROUTE_FLAG = "_is_viewset_route"
 
 def override(**kwargs):
     def wrapper(func):
-        setattr(func, "kwargs", kwargs)
+        func.kwargs = kwargs
         return func
 
     return wrapper

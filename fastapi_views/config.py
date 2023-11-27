@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from fastapi import FastAPI
+from fastapi.middleware.gzip import GZipMiddleware
 
-from .errors import ServiceUnavailableAPIError, add_error_handlers
+from .errors import ServiceUnavailableErrorDetails, add_error_handlers
 from .healthcheck import HealthCheck
 from .openapi import simplify_operation_ids
 from .prometheus import add_prometheus_middleware
@@ -21,6 +22,7 @@ def configure_app(
     healthcheck: HealthCheck | None = None,
     enable_prometheus_middleware: bool = True,
     simplify_openapi_ids: bool = True,
+    gzip_middleware_min_size: int | None = None,
     **tracing_opts,
 ):
     if enable_error_handlers:
@@ -31,12 +33,14 @@ def configure_app(
             path=healthcheck.endpoint,
             endpoint=healthcheck.get_endpoint,
             include_in_schema=healthcheck.include_in_schema,
-            responses={503: {"model": ServiceUnavailableAPIError}},
+            responses={503: {"model": ServiceUnavailableErrorDetails}},
         )
     if enable_prometheus_middleware:
         add_prometheus_middleware(app)
     if simplify_openapi_ids:
         simplify_operation_ids(app)
+    if gzip_middleware_min_size:
+        app.add_middleware(GZipMiddleware, minimum_size=gzip_middleware_min_size)
 
     if FastAPIInstrumentor is not None:
         FastAPIInstrumentor.instrument_app(app, **tracing_opts)

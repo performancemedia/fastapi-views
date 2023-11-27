@@ -1,16 +1,10 @@
 from ._version import __version__
 from .config import configure_app
-from .errors import (
-    APIError,
-    ConflictAPIError,
-    ErrorDetails,
-    NotFoundAPIError,
-    ServiceUnavailableAPIError,
-    errors,
-)
-from .models import APIModel, CamelCaseAPIModel, CamelCaseSerializer, Serializer
+from .errors import APIError, ErrorDetails, errors
 from .response import JsonResponse
 from .routers import ViewRouter, register_view
+from .schemas import BaseSchema, CamelCaseSchema
+from .serializer import TypeSerializer
 from .settings import APISettings
 
 __all__ = [
@@ -18,16 +12,12 @@ __all__ = [
     "configure_app",
     "APISettings",
     "APIError",
-    "APIModel",
-    "CamelCaseAPIModel",
-    "CamelCaseSerializer",
-    "ConflictAPIError",
+    "BaseSchema",
+    "CamelCaseSchema",
     "ErrorDetails",
-    "NotFoundAPIError",
-    "ServiceUnavailableAPIError",
     "errors",
     "JsonResponse",
     "ViewRouter",
     "register_view",
-    "Serializer",
+    "TypeSerializer",
 ]

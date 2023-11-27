@@ -5,7 +5,7 @@ from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
 
 from ..response import JsonResponse
 from .exceptions import APIError
-from .models import ErrorDetails, InternalServerAPIError
+from .models import ErrorDetails, InternalServerErrorDetails
 from .utils import find_model_for_exc
 
 logger = getLogger("exceptions.handler")
@@ -19,7 +19,7 @@ def api_error_handler(request: Request, exc: APIError):
             title=exc.title,
             status=exc.status,
             instance=exc.instance or request.url.path,
-        ).dict(),
+        ).model_dump(),
     )
 
 
@@ -28,15 +28,15 @@ def exception_handler(request: Request, exc: Exception):
     detail = getattr(exc, "detail", str(exc)) or "Internal Server Error"
     if model_cls:
         model = model_cls(detail=detail, instance=request.url.path)
-        return JsonResponse(status_code=model.status, content=model.dict())
+        return JsonResponse(status_code=model.status, content=model.model_dump())
 
     logger.exception("Unhandled exception", exc_info=exc)
     return JsonResponse(
         status_code=HTTP_500_INTERNAL_SERVER_ERROR,
-        content=InternalServerAPIError(
+        content=InternalServerErrorDetails(
             detail=detail,
             instance=request.url.path,
-        ).dict(),
+        ).model_dump(),
     )
 
 

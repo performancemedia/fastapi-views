@@ -2,7 +2,7 @@ import asyncio
 import inspect
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Generator, Iterator
-from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar, Union
 
 from fastapi import Depends, Request, Response
 from starlette.status import (
@@ -14,12 +14,14 @@ from starlette.status import (
 )
 
 from ..errors import errors
-from ..models import Serializer
 from ..response import JsonResponse
+from ..serializer import TypeSerializer
+from ..types import Action
 from .functools import VIEWSET_ROUTE_FLAG
 from .mixins import DetailViewMixin, ErrorHandlerMixin
 
-S = TypeVar("S", bound=type[Serializer])
+S = TypeVar("S", bound=type[Any])
+
 P = Iterator[dict[str, Any]]
 
 Endpoint = Callable[..., Union[Response, Awaitable[Response]]]
@@ -107,9 +109,9 @@ class View(ABC):
 
     @classmethod
     def _patch_metadata(cls, endpoint, method: Callable) -> None:
-        setattr(endpoint, "__doc__", method.__doc__)
-        setattr(endpoint, "__name__", method.__name__)
-        setattr(endpoint, "kwargs", getattr(method, "kwargs", {}))
+        endpoint.__doc__ = method.__doc__
+        endpoint.__name__ = method.__name__
+        endpoint.kwargs = getattr(method, "kwargs", {})
 
     @classmethod
     def _patch_endpoint_signature(cls, endpoint, method: Callable) -> None:
@@ -124,7 +126,7 @@ class View(ABC):
             for parameter in old_parameters[1:]
         ]
         new_signature = old_signature.replace(parameters=new_parameters)
-        setattr(endpoint, "__signature__", new_signature)
+        endpoint.__signature__ = new_signature
         cls._patch_metadata(endpoint, method)
 
     def get_response(self, content: Any) -> Response:
@@ -143,25 +145,41 @@ class APIView(View, ErrorHandlerMixin, Generic[S]):
     `serializer` and error handling
     """
 
-    serializer: S
+    response_schema: S
+    serializer_options: dict[str, Any] = {"by_alias": True}
+
+    _serializers: dict[str, TypeSerializer[S]] = {}
 
     @classmethod
-    def get_serializer(cls, action: str) -> S:
-        return cls.serializer
+    def get_response_schema(cls, action: Action) -> S:
+        return cls.response_schema
+
+    @classmethod
+    def get_serializer(cls, action: Action) -> TypeSerializer[S]:
+        if action not in cls._serializers:
+            response_schema = cls.get_response_schema(action)
+            cls._serializers[action] = TypeSerializer(response_schema)
+        return cls._serializers[action]
 
     def serialize_response(
-        self, action: str, content: Any, status_code: int = HTTP_200_OK
+        self, action: Action, content: Any, status_code: int = HTTP_200_OK
     ):
         if content:
             serializer = self.get_serializer(action)
-            content = serializer.parse(content)
+            content = serializer.serialize(content, **self.serializer_options)
         if self.response.status_code is None:
             self.response.status_code = status_code
         return self.get_response(content)
 
 
-class BaseListAPIView(APIView):
-    serializer_to_list: bool = True
+class BaseListAPIView(APIView[S]):
+    response_schema_as_list: bool = True
+
+    @classmethod
+    def get_response_schema(cls, action: Action) -> S:
+        if action == "list" and cls.response_schema_as_list:
+            return list[cls.response_schema]  # type: ignore
+        return cls.response_schema
 
     @classmethod
     @abstractmethod
@@ -170,11 +188,9 @@ class BaseListAPIView(APIView):
 
     @classmethod
     def get_api_actions(cls, prefix: str = ""):
-        response_model = (
-            list[cls.get_serializer("list")]  # type: ignore
-            if cls.serializer_to_list
-            else cls.get_serializer("list")
-        )
+        schema: S = cls.get_response_schema("list")
+        response_model = list[schema] if cls.response_schema_as_list else schema  # type: ignore
+
         yield cls.get_api_action(
             prefix=prefix,
             endpoint=cls.get_list_endpoint(),
@@ -243,7 +259,7 @@ class BaseRetrieveAPIView(APIView, DetailViewMixin):
             path=cls.get_detail_route(action="retrieve"),
             methods=["GET"],
             responses=errors(404),
-            response_model=cls.get_serializer(action="retrieve"),
+            response_model=cls.get_response_schema(action="retrieve"),
             name=f"Get {cls.get_name()}",
             operation_id=f"get_{cls.get_slug_name()}",
         )
@@ -265,11 +281,11 @@ class RetrieveAPIView(BaseRetrieveAPIView):
         return endpoint
 
     if TYPE_CHECKING:
-        retrieve: Callable[..., Optional[Any]]
+        retrieve: Callable[..., Any]
     else:
 
         @abstractmethod
-        def retrieve(self, *args, **kwargs) -> Optional[Any]:
+        def retrieve(self, *args, **kwargs) -> Any | None:
             raise NotImplementedError
 
 
@@ -292,7 +308,7 @@ class AsyncRetrieveAPIView(BaseRetrieveAPIView):
     else:
 
         @abstractmethod
-        async def retrieve(self, *args, **kwargs) -> Optional[Any]:
+        async def retrieve(self, *args, **kwargs) -> Any | None:
             raise NotImplementedError
 
 
@@ -312,7 +328,7 @@ class BaseCreateAPIView(APIView):
             methods=["POST"],
             status_code=201,
             responses=errors(409, 422),
-            response_model=cls.get_serializer(action="create"),
+            response_model=cls.get_response_schema(action="create"),
             name=f"Create {cls.get_name()}",
             operation_id=f"create_{cls.get_slug_name()}",
         )
@@ -384,7 +400,7 @@ class BaseUpdateAPIView(APIView, DetailViewMixin):
             endpoint=cls.get_update_endpoint(),
             methods=["PUT"],
             responses=errors(HTTP_404_NOT_FOUND, HTTP_422_UNPROCESSABLE_ENTITY),
-            response_model=cls.get_serializer(action="update"),
+            response_model=cls.get_response_schema(action="update"),
             name=f"Update {cls.get_name()}",
             operation_id=f"update_{cls.get_slug_name()}",
         )
@@ -454,7 +470,7 @@ class BasePartialUpdateAPIView(APIView, DetailViewMixin):
             endpoint=cls.get_partial_update_endpoint(),
             methods=["PATCH"],
             responses=errors(HTTP_404_NOT_FOUND, HTTP_422_UNPROCESSABLE_ENTITY),
-            response_model=cls.get_serializer(action="update"),
+            response_model=cls.get_response_schema(action="update"),
             name=f"Partial update {cls.get_name()}",
             operation_id=f"patch_{cls.get_slug_name()}",
         )

@@ -1,12 +1,13 @@
 from typing import Any, Optional
 
-from pydantic import BaseSettings, Field, PyObject
+from pydantic import Field, ImportString
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class APISettings(BaseSettings):
 
     # fastapi.applications.FastAPI initializer kwargs
-    debug: bool = Field(False, env="DEBUG")
+    debug: bool = Field(False, validation_alias="DEBUG")
     docs_url: str = "/docs"
     openapi_prefix: str = ""
     openapi_url: str = "/openapi.json"
@@ -15,12 +16,14 @@ class APISettings(BaseSettings):
     version: str = "0.1.0"
 
     # Custom settings
-    disable_docs: bool = Field(False, env="DISABLE_DOCS")
+    disable_docs: bool = Field(False, validation_alias="DISABLE_DOCS")
 
-    enable_error_handlers: bool = Field(True, env="ERROR_HANDLERS_ENABLE")
-    enable_prometheus_middleware: bool = Field(True, env="PROMETHEUS_MIDDLEWARE_ENABLE")
-    healthcheck: Optional[PyObject] = None
-    side_services: list[PyObject] = []
+    enable_error_handlers: bool = Field(True, validation_alias="ERROR_HANDLERS_ENABLE")
+    enable_prometheus_middleware: bool = Field(
+        True, validation_alias="PROMETHEUS_MIDDLEWARE_ENABLE"
+    )
+    healthcheck: Optional[ImportString] = None
+    services: list[ImportString] = []
     simplify_openapi_ids: bool = True
 
     @property
@@ -51,9 +54,8 @@ class APISettings(BaseSettings):
             "enable_error_handlers": self.enable_error_handlers,
             "healthcheck": self.healthcheck,
             "enable_prometheus_middleware": self.enable_prometheus_middleware,
-            "side_services": self.side_services,
+            "services": self.services,
             "simplify_openapi_ids": self.simplify_openapi_ids,
         }
 
-    class Config:
-        validate_assignment = True
+    model_config = SettingsConfigDict(validate_assignment=True)

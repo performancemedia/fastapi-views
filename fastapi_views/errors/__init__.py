@@ -1,10 +1,12 @@
 from .exceptions import APIError
 from .handlers import add_error_handlers, api_error_handler, exception_handler
 from .models import (
-    ConflictAPIError,
+    ConflictErrorDetails,
     ErrorDetails,
-    NotFoundAPIError,
-    ServiceUnavailableAPIError,
+    InternalServerErrorDetails,
+    NotFoundErrorDetails,
+    ServiceUnavailableErrorDetails,
+    TooManyRequestsErrorDetails,
 )
 from .utils import errors
 
@@ -14,8 +16,10 @@ __all__ = [
     "api_error_handler",
     "exception_handler",
     "ErrorDetails",
-    "NotFoundAPIError",
-    "ConflictAPIError",
-    "ServiceUnavailableAPIError",
+    "NotFoundErrorDetails",
+    "TooManyRequestsErrorDetails",
+    "ConflictErrorDetails",
+    "ServiceUnavailableErrorDetails",
+    "InternalServerErrorDetails",
     "errors",
 ]

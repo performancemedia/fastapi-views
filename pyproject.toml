@@ -8,12 +8,15 @@ packages = [{include = "fastapi_views"}]
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
-fastapi = "^0.95.0"
+pydantic = ">=2.0,<3.0"
+pydantic-settings = ">=2.0,<3.0"
+fastapi = "^0.104.0"
 orjson = ">=3.2.1,<=3.8.9"
 uvicorn = "^0.22.0"
-uvloop = "^0.17.0"
-starlette-exporter = "^0.16"
-opentelemetry-instrumentation-fastapi = {version = "^0.39b0", optional = true}
+uvloop = "^0.19.0"
+starlette-exporter = "^0.17"
+opentelemetry-instrumentation-fastapi = {version = "*", optional = true}
+
 
 [tool.poetry.extras]
 opentelemetry = ["opentelemetry-instrumentation-fastapi"]
@@ -33,6 +36,8 @@ httpx = "^0.24.0"
 asgi-lifespan = "^2.1.0"
 mypy = "^1.2.0"
 apscheduler = "^3.10.1"
+bump-pydantic = "^0.7.0"
+ruff = "^0.1.6"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "^1.4.2"
@@ -73,6 +78,20 @@ tag_commit = false
 python_version = 3.9
 ignore_missing_imports = true
 no_site_packages = true
+
+[tool.ruff]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    #= "I",  # isort
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+]
 
 [build-system]
 requires = ["poetry-core"]

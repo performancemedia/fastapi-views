@@ -2,15 +2,15 @@ from typing import Any
 
 import orjson
 from fastapi.responses import JSONResponse
-from pydantic.json import pydantic_encoder
+from pydantic_core import to_jsonable_python
 
 
 class JsonResponse(JSONResponse):
-    media_type = "application/json"
-
     def render(self, content: Any) -> bytes:
+        if isinstance(content, bytes):
+            return content
         return orjson.dumps(
             content,
             option=orjson.OPT_NON_STR_KEYS | orjson.OPT_SERIALIZE_NUMPY,
-            default=pydantic_encoder,
+            default=to_jsonable_python,
         )

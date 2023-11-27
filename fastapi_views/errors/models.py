@@ -1,10 +1,12 @@
-from typing import Optional
+from typing import Literal, Optional
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic.fields import FieldInfo
 from starlette.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
+    HTTP_429_TOO_MANY_REQUESTS,
     HTTP_500_INTERNAL_SERVER_ERROR,
     HTTP_503_SERVICE_UNAVAILABLE,
 )
@@ -27,42 +29,50 @@ class ErrorDetails(BaseModel):
     )
     instance: Optional[str] = Field(None, description="Requested instance")
 
+    @field_validator("detail", mode="before")
     @classmethod
-    def from_exception(
-        cls, exc: Exception, status_code: int = HTTP_400_BAD_REQUEST, **kwargs
-    ):
-        return cls(
-            detail=str(exc), type=type(exc).__name__, status=status_code, **kwargs
-        )
-
-    @validator("detail", always=True, pre=True)
     def validate_detail(cls, v):
         return v or "Internal Server Error"
 
     @classmethod
     def get_status(cls) -> int:
-        return cls.__fields__["status"].default
+        return cls.model_fields["status"].get_default()
 
-    class Config:
-        allow_population_by_field_name = True
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True, populate_by_name=True)
 
-
-class NotFoundAPIError(ErrorDetails):
-    title: str = Field("Not Found", const=True)
-    status: int = Field(HTTP_404_NOT_FOUND, const=True)
-
-
-class ConflictAPIError(ErrorDetails):
-    title: str = Field("Conflict", const=True)
-    status: int = Field(HTTP_409_CONFLICT, const=True)
-
-
-class ServiceUnavailableAPIError(ErrorDetails):
-    title: str = Field("Service Unavailable", const=True)
-    status: int = Field(HTTP_503_SERVICE_UNAVAILABLE, const=True)
+    def __init_subclass__(cls, **kwargs):
+        if title := kwargs.get("title"):
+            FieldInfo().merge_field_infos()
+            cls.model_fields["title"] = FieldInfo(
+                default=title, annotation=Literal[title]
+            )
+        if status := kwargs.get("status"):
+            cls.model_fields["status"] = FieldInfo(
+                default=status, annotation=Literal[status]
+            )
 
 
-class InternalServerAPIError(ErrorDetails):
-    title: str = Field("Internal Server Error", const=True)
-    status: int = Field(HTTP_500_INTERNAL_SERVER_ERROR, const=True)
+class NotFoundErrorDetails(ErrorDetails, title="Not Found", status=HTTP_404_NOT_FOUND):
+    pass
+
+
+class TooManyRequestsErrorDetails(
+    ErrorDetails, title="Too many requests", status=HTTP_429_TOO_MANY_REQUESTS
+):
+    pass
+
+
+class ConflictErrorDetails(ErrorDetails, title="Conflict", status=HTTP_409_CONFLICT):
+    pass
+
+
+class ServiceUnavailableErrorDetails(
+    ErrorDetails, title="Service Unavailable", status=HTTP_503_SERVICE_UNAVAILABLE
+):
+    pass
+
+
+class InternalServerErrorDetails(
+    ErrorDetails, title="Internal Server Error", status=HTTP_500_INTERNAL_SERVER_ERROR
+):
+    pass

@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from functools import cached_property
 from typing import Any, Callable, Generic, TypeVar, Union
-from uuid import UUID
 
 from fastapi import Request
 from pydantic import BaseModel
 from starlette.status import HTTP_400_BAD_REQUEST
 
 from ..errors.exceptions import APIError, NotFound
+from ..schemas import IdSchema
 from ..types import AsyncRepository, Repository
 
 R = TypeVar("R", bound=Union[AsyncRepository, Repository])
@@ -57,13 +58,13 @@ class ErrorHandlerMixin:
         return tuple(self.throws.keys()) or _Sentinel
 
 
-class IdModel(BaseModel):
-    id: UUID
-
-
 class GenericViewMixin(ErrorHandlerMixin, Generic[R]):
-    repository: R
+    repository_factory: Callable[..., R]
     params: type[BaseModel] = BaseModel
+
+    @cached_property
+    def repository(self) -> R:
+        return self.repository_factory()
 
     @classmethod
     def get_params(cls, action: str):
@@ -71,4 +72,8 @@ class GenericViewMixin(ErrorHandlerMixin, Generic[R]):
 
 
 class GenericDetailViewMixin(GenericViewMixin[R], DetailViewMixin):
-    pk: type[BaseModel] = IdModel
+    pk: type[BaseModel] = IdSchema
+
+    @classmethod
+    def get_pk(cls):
+        return frozenset(cls.pk.model_fields.keys())
