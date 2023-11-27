@@ -285,7 +285,7 @@ class RetrieveAPIView(BaseRetrieveAPIView):
     else:
 
         @abstractmethod
-        def retrieve(self, *args, **kwargs) -> Any | None:
+        def retrieve(self, *args, **kwargs) -> Any:
             raise NotImplementedError
 
 
