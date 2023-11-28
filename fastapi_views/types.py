@@ -1,9 +1,26 @@
 from __future__ import annotations
 
-from typing import Any, Literal, Protocol, TypeVar
+from typing import TYPE_CHECKING, Any, Literal, Protocol, TypedDict, TypeVar
+
+if TYPE_CHECKING:
+    from pydantic.type_adapter import IncEx
 
 Entity = TypeVar("Entity", bound=dict[str, Any])
 Action = Literal["create", "list", "retrieve", "update", "destroy", "partial_update"]
+
+
+class SerializerOptions(TypedDict, total=False):
+    validate: bool
+    from_attributes: bool | Literal["auto"]
+    indent: int | None
+    include: IncEx | None
+    exclude: IncEx | None
+    by_alias: bool
+    exclude_unset: bool
+    exclude_defaults: bool
+    exclude_none: bool
+    round_trip: bool
+    warnings: bool
 
 
 class Repository(Protocol[Entity]):

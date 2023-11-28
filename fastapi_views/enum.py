@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from enum import Enum, auto
 
-from fastapi_views.utils import snake2camel
+from pydantic.alias_generators import to_camel
 
 
 class StrEnum(str, Enum):
@@ -11,14 +11,8 @@ class StrEnum(str, Enum):
     Enums inheriting from this class that set values using `enum.auto()` will have variant values equal to their names
     """
 
-    # noinspection PyMethodParameters
-    def _generate_next_value_(name, start, count, last_values) -> str:  # type: ignore
-        """
-        Uses the name as the automatic value, rather than an integer
-
-        See https://docs.python.org/3/library/enum.html#using-automatic-values for reference
-        """
-        return name
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}.{self.value}"
 
 
 class AutoStrEnum(StrEnum):
@@ -29,8 +23,13 @@ class AutoStrEnum(StrEnum):
         """
         return auto()
 
-    def __repr__(self) -> str:
-        return f"{type(self).__name__}.{self.value}"
+    def _generate_next_value_(name, start, count, last_values) -> str:  # type: ignore
+        """
+        Uses the name as the automatic value, rather than an integer
+
+        See https://docs.python.org/3/library/enum.html#using-automatic-values for reference
+        """
+        return name
 
 
 class CamelStrEnum(str, Enum):
@@ -40,7 +39,9 @@ class CamelStrEnum(str, Enum):
 
     # noinspection PyMethodParameters
     def _generate_next_value_(name, start, count, last_values) -> str:  # type: ignore
-        """
-        Uses the camelCase name as the automatic value, rather than an integer
-        """
-        return snake2camel(name, start_lower=True)
+        return to_camel(name)
+
+
+class CamelCaseAutoEnum(AutoStrEnum):
+    def _generate_next_value_(name, start, count, last_values) -> str:  # type: ignore
+        return to_camel(name)

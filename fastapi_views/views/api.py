@@ -16,7 +16,7 @@ from starlette.status import (
 from ..errors import errors
 from ..response import JsonResponse
 from ..serializer import TypeSerializer
-from ..types import Action
+from ..types import Action, SerializerOptions
 from .functools import VIEWSET_ROUTE_FLAG
 from .mixins import DetailViewMixin, ErrorHandlerMixin
 
@@ -146,7 +146,7 @@ class APIView(View, ErrorHandlerMixin, Generic[S]):
     """
 
     response_schema: S
-    serializer_options: dict[str, Any] = {"by_alias": True}
+    serializer_options: SerializerOptions = {"by_alias": True, "from_attributes": True}
 
     _serializers: dict[str, TypeSerializer[S]] = {}
 
