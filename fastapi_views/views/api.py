@@ -308,7 +308,7 @@ class AsyncRetrieveAPIView(BaseRetrieveAPIView):
     else:
 
         @abstractmethod
-        async def retrieve(self, *args, **kwargs) -> Any | None:
+        async def retrieve(self, *args, **kwargs) -> Any:
             raise NotImplementedError
 
 
