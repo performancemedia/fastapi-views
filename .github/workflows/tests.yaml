@@ -42,5 +42,5 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: sudo apt-get update && sudo apt-get install -y gcc curl
       - run: curl -sSL https://install.python-poetry.org | python3 -
-      - run: poetry install
+      - run: poetry install --all-extras
       - run: poetry run pytest --cov=./fastapi_views --cov-report=xml -v ./tests
