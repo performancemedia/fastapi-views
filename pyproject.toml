@@ -63,7 +63,7 @@ skips = ['B101']
 profile = "black"
 
 [tool.deptry.per_rule_ignores]
-DEP003 = ["pydantic_core", "starlette", "typing_extensions"]
+DEP003 = ["fastapi-views", "pydantic_core", "starlette", "typing_extensions"]
 DEP002 = ["uvloop"]
 
 [tool.semantic_release]
