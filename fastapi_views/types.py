@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, Literal, Protocol, TypedDict, TypeVar
 if TYPE_CHECKING:
     from pydantic.type_adapter import IncEx
 
-Entity = TypeVar("Entity", bound=dict[str, Any])
+Entity = TypeVar("Entity", bound=Any)
 Action = Literal["create", "list", "retrieve", "update", "destroy", "partial_update"]
 
 

@@ -1,3 +1,4 @@
+from inspect import isabstract
 from typing import cast
 
 from fastapi import APIRouter
@@ -8,6 +9,8 @@ from .views.viewsets import AsyncGenericViewSet, GenericViewSet
 
 
 def register_view(router: APIRouter, view: type[View], prefix: str = ""):
+    if isabstract(view):
+        raise TypeError(f"Cannot register abstract view {view}")
     for route_params in view.get_api_actions(prefix):
         router.add_api_route(**route_params)
 
@@ -26,7 +29,7 @@ class CrudRouter(ViewRouter):
         create_serializer=None,
         update_serializer=None,
         is_async: bool = True,
-        **extra
+        **extra,
     ):
         super().__init__(**extra)
         bases = (AsyncGenericViewSet,) if is_async else (GenericViewSet,)

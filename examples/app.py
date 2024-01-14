@@ -23,7 +23,7 @@ P = TypeVar("P", bound=type[BaseModel])
 
 class MyViewSet(AsyncAPIViewSet):
     api_component_name = "Item"
-    serializer = ItemSchema
+    response_schema = ItemSchema
 
     async def list(self):
         return list(items.values())

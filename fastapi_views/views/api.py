@@ -2,22 +2,16 @@ import asyncio
 import inspect
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Generator, Iterator
-from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypeVar, Union
 
 from fastapi import Depends, Request, Response
-from starlette.status import (
-    HTTP_200_OK,
-    HTTP_201_CREATED,
-    HTTP_204_NO_CONTENT,
-    HTTP_404_NOT_FOUND,
-    HTTP_422_UNPROCESSABLE_ENTITY,
-)
+from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
-from ..errors import errors
+from ..errors.exceptions import APIError, Conflict, NotFound, UnprocessableEntity
 from ..response import JsonResponse
 from ..serializer import TypeSerializer
 from ..types import Action, SerializerOptions
-from .functools import VIEWSET_ROUTE_FLAG
+from .functools import VIEWSET_ROUTE_FLAG, catch_defined, errors
 from .mixins import DetailViewMixin, ErrorHandlerMixin
 
 S = TypeVar("S", bound=type[Any])
@@ -44,6 +38,7 @@ class View(ABC):
 
     api_component_name: str
     default_response_class: type[Response] = JsonResponse
+    errors: tuple[APIError, ...] = ()
 
     def __init__(self, request: Request, response: Response) -> None:
         self.request = request
@@ -102,9 +97,10 @@ class View(ABC):
         kwargs.setdefault("name", endpoint.__name__)
         endpoint_name = kwargs["name"]
         kwargs.setdefault("methods", ["GET"])
-        # kwargs.setdefault("response_model", get_type_hints(endpoint).get("return"))
         kwargs.setdefault("operation_id", f"{cls.get_slug_name()}_{endpoint_name}")
-
+        kwargs["responses"] = {
+            e.model.get_status(): {"model": e.model} for e in cls.errors
+        } | kwargs.get("responses", {})
         return kwargs
 
     @classmethod
@@ -129,12 +125,12 @@ class View(ABC):
         endpoint.__signature__ = new_signature
         cls._patch_metadata(endpoint, method)
 
-    def get_response(self, content: Any) -> Response:
+    def get_response(self, content: Any, status_code: Optional[int] = None) -> Response:
         if isinstance(content, Response):
             return content
         return self.default_response_class(
             content=content,
-            status_code=self.response.status_code or HTTP_200_OK,
+            status_code=status_code or self.response.status_code or HTTP_200_OK,
             headers=dict(self.response.headers),
         )
 
@@ -188,14 +184,11 @@ class BaseListAPIView(APIView[S]):
 
     @classmethod
     def get_api_actions(cls, prefix: str = ""):
-        schema: S = cls.get_response_schema("list")
-        response_model = list[schema] if cls.response_schema_as_list else schema  # type: ignore
-
         yield cls.get_api_action(
             prefix=prefix,
             endpoint=cls.get_list_endpoint(),
             methods=["GET"],
-            response_model=response_model,
+            response_model=cls.get_response_schema("list"),
             name=f"List {cls.get_name()}",
             operation_id=f"list_{cls.get_slug_name()}",
         )
@@ -207,6 +200,7 @@ class AsyncListAPIView(BaseListAPIView, ABC):
 
     @classmethod
     def get_list_endpoint(cls) -> Endpoint:
+        @catch_defined
         async def endpoint(self: AsyncListAPIView, *args, **kwargs):
             objects = await self.list(*args, **kwargs)
             return self.serialize_response("list", objects)
@@ -258,7 +252,7 @@ class BaseRetrieveAPIView(APIView, DetailViewMixin):
             endpoint=cls.get_retrieve_endpoint(),
             path=cls.get_detail_route(action="retrieve"),
             methods=["GET"],
-            responses=errors(404),
+            responses=errors(NotFound),
             response_model=cls.get_response_schema(action="retrieve"),
             name=f"Get {cls.get_name()}",
             operation_id=f"get_{cls.get_slug_name()}",
@@ -327,7 +321,7 @@ class BaseCreateAPIView(APIView):
             endpoint=cls.get_create_endpoint(),
             methods=["POST"],
             status_code=201,
-            responses=errors(409, 422),
+            responses=errors(Conflict, UnprocessableEntity),
             response_model=cls.get_response_schema(action="create"),
             name=f"Create {cls.get_name()}",
             operation_id=f"create_{cls.get_slug_name()}",
@@ -344,6 +338,7 @@ class CreateAPIView(BaseCreateAPIView):
             obj = self.create(*args, **kwargs)
             if self.return_on_create:
                 return self.serialize_response("create", obj, HTTP_201_CREATED)
+            # return self.get_response(content=None, status_code=HTTP_201_CREATED)
             return Response(status_code=HTTP_201_CREATED)
 
         cls._patch_endpoint_signature(endpoint, cls.create)
@@ -399,7 +394,7 @@ class BaseUpdateAPIView(APIView, DetailViewMixin):
             path=cls.get_detail_route(action="update"),
             endpoint=cls.get_update_endpoint(),
             methods=["PUT"],
-            responses=errors(HTTP_404_NOT_FOUND, HTTP_422_UNPROCESSABLE_ENTITY),
+            responses=errors(NotFound, UnprocessableEntity),
             response_model=cls.get_response_schema(action="update"),
             name=f"Update {cls.get_name()}",
             operation_id=f"update_{cls.get_slug_name()}",
@@ -469,7 +464,7 @@ class BasePartialUpdateAPIView(APIView, DetailViewMixin):
             path=cls.get_detail_route(action="update"),
             endpoint=cls.get_partial_update_endpoint(),
             methods=["PATCH"],
-            responses=errors(HTTP_404_NOT_FOUND, HTTP_422_UNPROCESSABLE_ENTITY),
+            responses=errors(NotFound, UnprocessableEntity),
             response_model=cls.get_response_schema(action="update"),
             name=f"Partial update {cls.get_name()}",
             operation_id=f"patch_{cls.get_slug_name()}",

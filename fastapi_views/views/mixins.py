@@ -36,22 +36,21 @@ class _Sentinel(Exception):
 class ErrorHandlerMixin:
     request: Request
 
-    throws: dict[type[Exception], dict[str, Any]] = {}
+    throws: dict[type[Exception], str | dict[str, Any]] = {}
 
-    def get_error_message(self, key: type[Exception]) -> dict[str, Any]:
-        return self.throws.get(
-            key, {"detail": "Something went wrong", "status": HTTP_400_BAD_REQUEST}
-        )
+    def get_error_message(self, key: type[Exception]) -> str | dict[str, Any]:
+        return self.throws.get(key, {})
 
-    def handle_error(self, exc_type: type[Exception], exc: Exception, **kwargs):
-        kw = self.get_error_message(exc_type)
+    def handle_error(self, exc: Exception, **kwargs):
+        kw = self.get_error_message(type(exc))
         if isinstance(kw, str):
             kwargs["detail"] = kw
         elif isinstance(kw, Mapping):
             kwargs.update(kw)
         kwargs.setdefault("instance", self.request.url.path)
-        kwargs.setdefault("title", exc_type.__name__)
+        kwargs.setdefault("title", type(exc).__name__)
         kwargs.setdefault("detail", str(exc))
+        kwargs.setdefault("status", HTTP_400_BAD_REQUEST)
         raise APIError(**kwargs)
 
     def get_exception_class(self):

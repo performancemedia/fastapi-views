@@ -27,5 +27,5 @@ class CreatedUpdatedSchema(BaseSchema):
     )
 
 
-class IdTimestampedSchema(IdSchema, CreatedUpdatedSchema):
+class IdCreatedUpdatedSchema(IdSchema, CreatedUpdatedSchema):
     pass

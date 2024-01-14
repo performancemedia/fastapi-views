@@ -3,17 +3,13 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 
-from .errors import ServiceUnavailableErrorDetails, add_error_handlers
+from .errors.handlers import add_error_handlers
+from .errors.models import ServiceUnavailableErrorDetails
 from .healthcheck import HealthCheck
 from .openapi import simplify_operation_ids
+from .opentelemetry import maybe_instrument_app
 from .prometheus import add_prometheus_middleware
 from .settings import APISettings
-
-try:
-    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-
-except ImportError:
-    FastAPIInstrumentor = None
 
 
 def configure_app(
@@ -23,7 +19,7 @@ def configure_app(
     enable_prometheus_middleware: bool = True,
     simplify_openapi_ids: bool = True,
     gzip_middleware_min_size: int | None = None,
-    **tracing_opts,
+    **tracing_options,
 ):
     if enable_error_handlers:
         add_error_handlers(app)
@@ -42,8 +38,7 @@ def configure_app(
     if gzip_middleware_min_size:
         app.add_middleware(GZipMiddleware, minimum_size=gzip_middleware_min_size)
 
-    if FastAPIInstrumentor is not None:
-        FastAPIInstrumentor.instrument_app(app, **tracing_opts)
+    maybe_instrument_app(app, **tracing_options)
 
 
 def create_fastapi_app(settings: APISettings, **kwargs) -> FastAPI:
@@ -53,5 +48,5 @@ def create_fastapi_app(settings: APISettings, **kwargs) -> FastAPI:
 
 
 def create_fastapi_from_env(**kwargs):
-    settings = APISettings(**kwargs)
-    return create_fastapi_app(settings)
+    settings = APISettings()
+    return create_fastapi_app(settings, **kwargs)

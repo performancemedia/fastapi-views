@@ -4,15 +4,23 @@ import asyncio
 import functools
 from typing import TYPE_CHECKING, Any, Callable
 
+from typing_extensions import ParamSpec
+
+from fastapi_views.errors.exceptions import APIError
+
 if TYPE_CHECKING:
     from fastapi_views.views.mixins import ErrorHandlerMixin
 
 VIEWSET_ROUTE_FLAG = "_is_viewset_route"
 
+P = ParamSpec("P")
 
-def override(**kwargs):
-    def wrapper(func):
-        func.kwargs = kwargs
+F = Callable[[P.args, P.kwargs], Any]
+
+
+def override(**kwargs: Any) -> Callable[[F], F]:
+    def wrapper(func: F) -> F:
+        func.kwargs = kwargs  # type: ignore[attr-defined]
         return func
 
     return wrapper
@@ -21,8 +29,16 @@ def override(**kwargs):
 annotate = override
 
 
-def route(path: str, **kwargs: Any) -> Callable:
-    def wrapper(func: Callable):
+def errors(*exceptions: type[APIError]):
+    return {e.model.get_status(): {"model": e.model} for e in exceptions}
+
+
+def throws(*exceptions: type[APIError]):
+    return override(responses=errors(*exceptions))
+
+
+def route(path: str, **kwargs: Any) -> Callable[[F], F]:
+    def wrapper(func: F) -> F:
         setattr(func, VIEWSET_ROUTE_FLAG, True)
         return override(path=path, **kwargs)(func)
 
@@ -36,14 +52,14 @@ def catch(exc_type: type[Exception] | tuple[type[Exception]], **kw: Any):
             try:
                 return await func(self, *args, **kwargs)
             except exc_type as e:
-                self.handle_error(exc_type, e, **kw)
+                self.handle_error(e, **kw)
 
         @functools.wraps(func)
         def wrapped_sync(self, *args, **kwargs):
             try:
                 return func(self, *args, **kwargs)
             except exc_type as e:
-                self.handle_error(exc_type, e, **kw)
+                self.handle_error(e, **kw)
 
         if asyncio.iscoroutinefunction(func):
             return wrapped_async
@@ -58,14 +74,14 @@ def catch_defined(func):
         try:
             return await func(self, *args, **kwargs)
         except self.get_exception_class() as e:
-            self.handle_error(type(e), e)
+            self.handle_error(e)
 
     @functools.wraps(func)
     def wrapped_sync(self: ErrorHandlerMixin, *args, **kwargs):
         try:
             return func(self, *args, **kwargs)
         except self.get_exception_class() as e:
-            self.handle_error(type(e), e)
+            self.handle_error(e)
 
     if asyncio.iscoroutinefunction(func):
         return wrapped_async

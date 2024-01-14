@@ -1,13 +1,13 @@
 from typing import Any, Optional
 
-from pydantic import Field, ImportString
+from pydantic import ImportString
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class APISettings(BaseSettings):
 
     # fastapi.applications.FastAPI initializer kwargs
-    debug: bool = Field(False, validation_alias="DEBUG")
+    debug: bool = False
     docs_url: str = "/docs"
     openapi_prefix: str = ""
     openapi_url: str = "/openapi.json"
@@ -16,12 +16,10 @@ class APISettings(BaseSettings):
     version: str = "0.1.0"
 
     # Custom settings
-    disable_docs: bool = Field(False, validation_alias="DISABLE_DOCS")
+    disable_docs: bool = False
 
-    enable_error_handlers: bool = Field(True, validation_alias="ERROR_HANDLERS_ENABLE")
-    enable_prometheus_middleware: bool = Field(
-        True, validation_alias="PROMETHEUS_MIDDLEWARE_ENABLE"
-    )
+    enable_error_handlers: bool = True
+    enable_prometheus_middleware: bool = True
     healthcheck: Optional[ImportString] = None
     services: list[ImportString] = []
     simplify_openapi_ids: bool = True
@@ -58,4 +56,4 @@ class APISettings(BaseSettings):
             "simplify_openapi_ids": self.simplify_openapi_ids,
         }
 
-    model_config = SettingsConfigDict(validate_assignment=True)
+    model_config = SettingsConfigDict(validate_assignment=True, env_prefix="FASTAPI_")
