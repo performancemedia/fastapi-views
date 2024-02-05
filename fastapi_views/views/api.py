@@ -1,7 +1,7 @@
 import asyncio
 import inspect
 from abc import ABC, abstractmethod
-from collections.abc import Awaitable, Generator, Iterator
+from collections.abc import Awaitable, Generator
 from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypeVar, Union
 
 from fastapi import Depends, Request, Response
@@ -11,12 +11,10 @@ from ..errors.exceptions import APIError, Conflict, NotFound, UnprocessableEntit
 from ..response import JsonResponse
 from ..serializer import TypeSerializer
 from ..types import Action, SerializerOptions
-from .functools import VIEWSET_ROUTE_FLAG, catch_defined, errors
+from .functools import VIEWSET_ROUTE_FLAG, errors
 from .mixins import DetailViewMixin, ErrorHandlerMixin
 
 S = TypeVar("S", bound=type[Any])
-
-P = Iterator[dict[str, Any]]
 
 Endpoint = Callable[..., Union[Response, Awaitable[Response]]]
 
@@ -58,7 +56,6 @@ class View(ABC):
 
     @classmethod
     def get_custom_endpoint(cls, func):
-        # TODO: verify if those functions need to be redefined in loop
         async def _async_endpoint(self, *args, **kwargs):
             res = await func(self, *args, **kwargs)
             return self.get_response(content=res)
@@ -200,7 +197,6 @@ class AsyncListAPIView(BaseListAPIView, ABC):
 
     @classmethod
     def get_list_endpoint(cls) -> Endpoint:
-        @catch_defined
         async def endpoint(self: AsyncListAPIView, *args, **kwargs):
             objects = await self.list(*args, **kwargs)
             return self.serialize_response("list", objects)
@@ -388,7 +384,6 @@ class BaseUpdateAPIView(APIView, DetailViewMixin):
 
     @classmethod
     def get_api_actions(cls, prefix: str = ""):
-
         yield cls.get_api_action(
             prefix=prefix,
             path=cls.get_detail_route(action="update"),

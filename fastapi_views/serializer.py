@@ -19,14 +19,9 @@ class TypeSerializer(TypeAdapter[T]):
     ) -> bytes:
         if validate:
             if from_attributes == "auto":
-                from_attributes = (
-                    True
-                    if isinstance(obj, Mapping)
-                    or (
-                        isinstance(obj, Sequence)
-                        and all(isinstance(el, Mapping) for el in obj)
-                    )
-                    else False
+                from_attributes = not isinstance(obj, Mapping) or (
+                    isinstance(obj, Sequence)
+                    and all(isinstance(el, Mapping) for el in obj)
                 )
             obj = self.validate_python(obj, from_attributes=from_attributes)
         return self.dump_json(obj, **options)

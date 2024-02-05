@@ -18,7 +18,7 @@ P = ParamSpec("P")
 F = Callable[[P.args, P.kwargs], Any]
 
 
-def override(**kwargs: Any) -> Callable[[F], F]:
+def annotate(**kwargs: Any) -> Callable[[F], F]:
     def wrapper(func: F) -> F:
         func.kwargs = kwargs  # type: ignore[attr-defined]
         return func
@@ -26,7 +26,7 @@ def override(**kwargs: Any) -> Callable[[F], F]:
     return wrapper
 
 
-annotate = override
+override = annotate
 
 
 def errors(*exceptions: type[APIError]):
@@ -48,14 +48,14 @@ def route(path: str, **kwargs: Any) -> Callable[[F], F]:
 def catch(exc_type: type[Exception] | tuple[type[Exception]], **kw: Any):
     def wrapper(func):
         @functools.wraps(func)
-        async def wrapped_async(self, *args, **kwargs):
+        async def wrapped_async(self: ErrorHandlerMixin, *args, **kwargs):
             try:
                 return await func(self, *args, **kwargs)
             except exc_type as e:
                 self.handle_error(e, **kw)
 
         @functools.wraps(func)
-        def wrapped_sync(self, *args, **kwargs):
+        def wrapped_sync(self: ErrorHandlerMixin, *args, **kwargs):
             try:
                 return func(self, *args, **kwargs)
             except exc_type as e:

@@ -48,7 +48,7 @@ items = {}
 
 
 class MyViewSet(AsyncAPIViewSet):
-    serializer = ItemSchema
+    response_schema = ItemSchema
     
     async def list(self, *args, **kwargs):
         return list(items.values())

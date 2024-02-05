@@ -5,7 +5,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class APISettings(BaseSettings):
-
     # fastapi.applications.FastAPI initializer kwargs
     debug: bool = False
     docs_url: str = "/docs"

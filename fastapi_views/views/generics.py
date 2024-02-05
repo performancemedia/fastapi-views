@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 from typing import Any, Optional
 
 from fastapi import Depends, Response
@@ -31,9 +32,9 @@ class GenericListView(ListAPIView, GenericViewMixin[Repository]):
 
         def endpoint(
             self: GenericListView = Depends(cls),
-            params: param_type = Depends(param_type),  # type: ignore[valid-type]
+            params: param_type = Depends(param_type),
         ):
-            objects = self.list(**params.model_dump(exclude_none=True))  # type: ignore[attr-defined]
+            objects = self.list(**params.model_dump(exclude_none=True))
             return self.serialize_response("list", objects, status_code=HTTP_200_OK)
 
         cls._patch_metadata(endpoint, cls.list)
@@ -55,7 +56,7 @@ class AsyncGenericListView(AsyncListAPIView, GenericViewMixin[AsyncRepository]):
             self: AsyncGenericListView = Depends(cls),
             params: param_type = Depends(param_type),
         ):
-            objects = await self.list(**params.model_dump(exclude_none=True))  # type: ignore[attr-defined]
+            objects = await self.list(**params.model_dump(exclude_none=True))
             return self.serialize_response("list", objects, status_code=HTTP_200_OK)
 
         cls._patch_metadata(endpoint, cls.list)
@@ -82,7 +83,8 @@ class GenericCreateView(CreateAPIView, GenericViewMixin[Repository]):
             params: param_type = Depends(param_type),
         ):
             obj = self.create(
-                create_schema.model_dump(), **params.model_dump(exclude_none=True)  # type: ignore[attr-defined]
+                create_schema.model_dump(),
+                **params.model_dump(exclude_none=True),
             )
             if self.return_on_create:
                 return self.serialize_response(
@@ -113,9 +115,9 @@ class AsyncGenericCreateView(AsyncCreateAPIView, GenericViewMixin[AsyncRepositor
             self: AsyncGenericCreateView = Depends(cls),
             params: param_type = Depends(param_type),
         ):
-
             obj = await self.create(
-                create_schema.model_dump(), **params.model_dump(exclude_none=True)  # type: ignore[attr-defined]
+                create_schema.model_dump(),
+                **params.model_dump(exclude_none=True),
             )
             if self.return_on_create:
                 return self.serialize_response(
@@ -144,7 +146,10 @@ class GenericRetrieveView(RetrieveAPIView, GenericDetailViewMixin[Repository]):
             pk: pk_type = Depends(pk_type),
             params: param_type = Depends(param_type),
         ) -> Endpoint:
-            kwargs = {**pk.model_dump(exclude_none=True), **params.model_dump(exclude_none=True)}  # type: ignore[attr-defined]
+            kwargs = {
+                **pk.model_dump(exclude_none=True),
+                **params.model_dump(exclude_none=True),
+            }
             obj = self.retrieve(**kwargs)
             if obj is None and self.raise_on_none:
                 self.raise_not_found_error()
@@ -170,10 +175,13 @@ class AsyncGenericRetrieveView(
 
         async def endpoint(
             self: AsyncGenericRetrieveView = Depends(cls),
-            pk: pk_type = Depends(pk_type),  # type: ignore[valid-type]
-            params: param_type = Depends(param_type),  # type: ignore[valid-type]
+            pk: pk_type = Depends(pk_type),
+            params: param_type = Depends(param_type),
         ):
-            kwargs = {**pk.model_dump(exclude_none=True), **params.model_dump(exclude_none=True)}  # type: ignore[attr-defined]
+            kwargs = {
+                **pk.model_dump(exclude_none=True),
+                **params.model_dump(exclude_none=True),
+            }
 
             obj = await self.retrieve(**kwargs)
             if obj is None:
@@ -201,14 +209,17 @@ class GenericUpdateView(AsyncUpdateAPIView, GenericDetailViewMixin[Repository]):
         update_schema_type = cls.update_schema or cls.response_schema
 
         def endpoint(
-            update_schema: update_schema_type,  # type: ignore[valid-type]
+            update_schema: update_schema_type,
             self: GenericUpdateView = Depends(cls),
-            pk: pk_type = Depends(pk_type),  # type: ignore[valid-type]
-            params: param_type = Depends(param_type),  # type: ignore[valid-type]
+            pk: pk_type = Depends(pk_type),
+            params: param_type = Depends(param_type),
         ):
-            kwargs = {**pk.model_dump(exclude_none=True), **params.model_dump(exclude_none=True)}  # type: ignore[attr-defined]
+            kwargs = {
+                **pk.model_dump(exclude_none=True),
+                **params.model_dump(exclude_none=True),
+            }
 
-            obj = self.update(update_schema.model_dump(), **kwargs)  # type: ignore[attr-defined]
+            obj = self.update(update_schema.model_dump(), **kwargs)
             if self.return_on_update:
                 return self.serialize_response("update", obj)
             return Response(status_code=HTTP_200_OK)
@@ -235,13 +246,16 @@ class AsyncGenericUpdateView(
         update_schema_type = cls.update_schema or cls.response_schema
 
         async def endpoint(
-            update_schema: update_schema_type,  # type: ignore[valid-type]
+            update_schema: update_schema_type,
             self: AsyncGenericUpdateView = Depends(cls),
-            pk: pk_type = Depends(pk_type),  # type: ignore[valid-type]
-            params: param_type = Depends(param_type),  # type: ignore[valid-type]
+            pk: pk_type = Depends(pk_type),
+            params: param_type = Depends(param_type),
         ):
-            kwargs = {**pk.model_dump(exclude_none=True), **params.model_dump(exclude_none=True)}  # type: ignore[attr-defined]
-            obj = await self.update(update_schema.model_dump(), **kwargs)  # type: ignore[attr-defined]
+            kwargs = {
+                **pk.model_dump(exclude_none=True),
+                **params.model_dump(exclude_none=True),
+            }
+            obj = await self.update(update_schema.model_dump(), **kwargs)
             if self.return_on_update:
                 return self.serialize_response("update", obj)
             return Response(status_code=HTTP_200_OK)
@@ -268,7 +282,7 @@ class GenericPartialUpdateView(
         partial_update_schema_type = cls.partial_update_schema or cls.response_schema
 
         def endpoint(
-            partial_update_schema: partial_update_schema_type,  # type: ignore[valid-type]
+            partial_update_schema: partial_update_schema_type,
             self=Depends(cls),
             pk=Depends(pk_type),
             params=Depends(param_type),
@@ -277,7 +291,7 @@ class GenericPartialUpdateView(
                 **pk.model_dump(exclude_none=True),
                 **params.model_dump(exclude_none=True),
             }
-            obj = self.partial_update(partial_update_schema.model_dump(), **kwargs)  # type: ignore[attr-defined]
+            obj = self.partial_update(partial_update_schema.model_dump(), **kwargs)
             if self.return_on_update:
                 return self.serialize_response("partial_update", obj)
             return Response(status_code=HTTP_200_OK)
@@ -304,12 +318,15 @@ class AsyncGenericPartialUpdateView(
         partial_update_schema_type = cls.partial_update_schema or cls.response_schema
 
         async def endpoint(
-            partial_update_schema: partial_update_schema_type,  # type: ignore[valid-type]
+            partial_update_schema: partial_update_schema_type,
             self=Depends(cls),
             pk=Depends(pk_type),
             params=Depends(param_type),
         ):
-            kwargs = {**pk.model_dump(exclude_none=True), **params.model_dump(exclude_none=True)}  # type: ignore[attr-defined]
+            kwargs = {
+                **pk.model_dump(exclude_none=True),
+                **params.model_dump(exclude_none=True),
+            }
             obj = await self.partial_update(
                 partial_update_schema=partial_update_schema, **kwargs
             )

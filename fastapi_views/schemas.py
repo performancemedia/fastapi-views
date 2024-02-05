@@ -6,7 +6,6 @@ from pydantic.alias_generators import to_camel
 
 
 class BaseSchema(BaseModel):
-
     model_config = ConfigDict(
         use_enum_values=True, populate_by_name=True, from_attributes=True
     )

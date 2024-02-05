@@ -36,10 +36,10 @@ class _Sentinel(Exception):
 class ErrorHandlerMixin:
     request: Request
 
-    throws: dict[type[Exception], str | dict[str, Any]] = {}
+    raises: dict[type[Exception], str | dict[str, Any]] = {}
 
     def get_error_message(self, key: type[Exception]) -> str | dict[str, Any]:
-        return self.throws.get(key, {})
+        return self.raises.get(key, {})
 
     def handle_error(self, exc: Exception, **kwargs):
         kw = self.get_error_message(type(exc))
@@ -53,8 +53,8 @@ class ErrorHandlerMixin:
         kwargs.setdefault("status", HTTP_400_BAD_REQUEST)
         raise APIError(**kwargs)
 
-    def get_exception_class(self):
-        return tuple(self.throws.keys()) or _Sentinel
+    def get_exception_class(self) -> tuple[type[Exception], ...] | type[Exception]:
+        return tuple(self.raises.keys()) or _Sentinel
 
 
 class GenericViewMixin(ErrorHandlerMixin, Generic[R]):
@@ -72,7 +72,3 @@ class GenericViewMixin(ErrorHandlerMixin, Generic[R]):
 
 class GenericDetailViewMixin(GenericViewMixin[R], DetailViewMixin):
     pk: type[BaseModel] = IdSchema
-
-    @classmethod
-    def get_pk(cls):
-        return frozenset(cls.pk.model_fields.keys())

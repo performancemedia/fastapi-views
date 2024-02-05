@@ -20,17 +20,17 @@ class CustomView(View):
 ## ApiView
 
 ```python
-from fastapi_views import Serializer
-from fastapi_views.views import get, post
+from pydantic import BaseModel
+from fastapi_views.views.functools import get, post
 from fastapi_views.views.api import APIView
 
-class ItemSerializer(Serializer):
+class ItemSerializer(BaseModel):
     id: int
     name: str
     price: int
 
 class CustomView(APIView):
-    serializer = ItemSerializer 
+    response_schema = ItemSerializer 
 
     @get("")
     async def list_come_items(self) -> list[ItemSerializer]:
@@ -48,7 +48,7 @@ class CustomView(APIView):
 from fastapi_views.views.generics import GenericListView
 
 class MyGenericView(GenericListView):
-    serializer = ...
+    response_schema = ...
     repository = ... # <- set your own interface provider
 
 ```
@@ -58,12 +58,11 @@ class MyGenericView(GenericListView):
 ```python
 from typing import Optional
 from uuid import UUID
-
-from fastapi_views import Serializer, ViewRouter
+from pydantic import BaseModel
 from fastapi_views.views.viewsets import AsyncAPIViewSet
 
 
-class ItemSchema(Serializer):
+class ItemSchema(BaseModel):
     id: UUID
     name: str
     price: int
@@ -74,7 +73,7 @@ items = {}
 
 class MyViewSet(AsyncAPIViewSet):
     api_component_name = "Item"
-    serializer = ItemSchema
+    response_schema = ItemSchema
     
     async def list(self):
         return list(items.values())
