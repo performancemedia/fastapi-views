@@ -8,7 +8,8 @@ from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 from httpx import AsyncClient
 
-from fastapi_views import Serializer, ViewRouter
+from fastapi_views import ViewRouter
+from fastapi_views.schemas import BaseSchema
 from fastapi_views.views.api import (
     AsyncCreateAPIView,
     AsyncDestroyAPIView,
@@ -40,8 +41,8 @@ async def client(app) -> AsyncGenerator[AsyncClient, None]:
         yield test_client
 
 
-class DummySerializer(Serializer):
-    x: str = "test"
+class DummySerializer(BaseSchema):
+    x: str
 
 
 @pytest.fixture(scope="session")
@@ -53,7 +54,6 @@ def view_as_fixture(name: str, prefix: str = "/test"):
     def wrapper(cls):
         @pytest.fixture(name=name)
         def _view_fixture(app: FastAPI):
-
             router = ViewRouter()
             router.register_view(cls, prefix=prefix)
             app.include_router(router)
@@ -65,16 +65,16 @@ def view_as_fixture(name: str, prefix: str = "/test"):
 
 @view_as_fixture("list_view")
 class TestListView(AsyncListAPIView):
-    serializer = DummySerializer
+    response_schema = DummySerializer
 
     async def list(self) -> Any:
-        return [None]
+        return [{"x": "test"}]
 
 
 @view_as_fixture("retrieve_view")
 class TestRetrieveView(AsyncRetrieveAPIView):
     detail_route = ""
-    serializer = DummySerializer
+    response_schema = DummySerializer
 
     async def retrieve(self) -> Optional[Any]:
         return DummySerializer(x="test")
@@ -90,7 +90,7 @@ class TestDestroyView(AsyncDestroyAPIView):
 
 @view_as_fixture("create_view")
 class TestCreateView(AsyncCreateAPIView):
-    serializer = DummySerializer
+    response_schema = DummySerializer
 
     async def create(self) -> Any:
         return DummySerializer(x="test")
@@ -113,10 +113,11 @@ class FakeRepository:
         pass
 
     async def list(self, *args, **kwargs):
-        return [DummySerializer(x="test")]
+        return [{"x": "test"}]
+        # return [DummySerializer(x="test")]
 
 
 @view_as_fixture("generic_viewset")
 class TestGenericViewSet(AsyncGenericViewSet):
-    repository = FakeRepository()
-    serializer = DummySerializer
+    repository_factory = FakeRepository
+    response_schema = DummySerializer

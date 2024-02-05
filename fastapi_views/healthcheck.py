@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import Any, Callable
 
 from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
-from .errors import ServiceUnavailableAPIError
+from .errors.models import ServiceUnavailableErrorDetails
 from .response import JsonResponse
 
 
@@ -43,25 +42,15 @@ class HealthCheck:
         return wrapper
 
     async def get_endpoint(self):
-        failed = False
-        task = asyncio.gather(*[t() for t in self.checks], return_exceptions=True)
         try:
-            results = await asyncio.wait_for(task, timeout=10)
-            for r in results:
-                if isinstance(r, Exception):
-                    self.logger.warning(f"Healthcheck failed with exc: {r}")
-                    failed = True
-                    break
-        except asyncio.TimeoutError:
-            failed = True
-        finally:
-            if failed:
-                return self.response_class(
-                    content=ServiceUnavailableAPIError(
-                        detail="Service liveness probe failed"
-                    ).dict(),
-                    status_code=HTTP_503_SERVICE_UNAVAILABLE,
-                )
+            for check in self.checks:
+                await check()
+            return JsonResponse(content={"status": "ok"}, status_code=HTTP_200_OK)
+        except Exception as e:
+            self.logger.warning("Healthcheck failed with exception", exc_info=e)
             return self.response_class(
-                content={"status": "ok"}, status_code=HTTP_200_OK
+                content=ServiceUnavailableErrorDetails(
+                    detail="Service liveness probe failed"
+                ).model_dump_json(),
+                status_code=HTTP_503_SERVICE_UNAVAILABLE,
             )

@@ -5,12 +5,12 @@ from uuid import UUID
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from fastapi_views import Serializer, ViewRouter, configure_app
+from fastapi_views import ViewRouter, configure_app
 from fastapi_views.healthcheck import HealthCheck
 from fastapi_views.views.viewsets import AsyncAPIViewSet
 
 
-class ItemSchema(Serializer):
+class ItemSchema(BaseModel):
     id: UUID
     name: str
     price: int
@@ -23,7 +23,7 @@ P = TypeVar("P", bound=type[BaseModel])
 
 class MyViewSet(AsyncAPIViewSet):
     api_component_name = "Item"
-    serializer = ItemSchema
+    response_schema = ItemSchema
 
     async def list(self):
         return list(items.values())

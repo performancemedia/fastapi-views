@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fastapi-views"
-version = "0.0.7"
+version = "1.0.0-beta.1"
 description = "FastAPI Class Views and utilities"
 authors = ["Radzim Kowalow <radzim.kowalow@performance-media.pl>"]
 readme = "README.md"
@@ -8,51 +8,94 @@ packages = [{include = "fastapi_views"}]
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
-fastapi = "^0.95.0"
-orjson = ">=3.2.1,<=3.8.9"
-uvicorn = "^0.22.0"
-uvloop = "^0.17.0"
-starlette-exporter = "^0.16"
-opentelemetry-instrumentation-fastapi = {version = "^0.39b0", optional = true}
+fastapi = "^0.109.2"
+pydantic = ">=2.0,<3.0"
+pydantic-settings = ">=2.0,<3.0"
+orjson = "^3.9.10"
+opentelemetry-instrumentation-fastapi = {version = "*", optional = true}
+starlette-exporter = {version = "^0.17.1", optional = true}
+uvloop = {version = "^0.19.0", optional = true}
+
 
 [tool.poetry.extras]
+all = ["uvloop", "starlette-exporter", "opentelemetry-instrumentation-fastapi"]
+uvloop = ["uvloop"]
+prometheus = ["starlette-exporter"]
 opentelemetry = ["opentelemetry-instrumentation-fastapi"]
 
 [tool.poetry.group.dev.dependencies]
+mypy = "^1.2.0"
+ruff = "^0.1.11"
+deptry = "^0.12.0"
+bandit = "^1.7.4"
+
+[tool.poetry.group.test.dependencies]
 pytest = "^7.2.1"
 pytest-asyncio = "^0.20.2"
 pytest-cov = "^4.0.0"
-black = "^22.3.0"
-flake8 = "^6.0.0"
-isort = "^5.10.1"
-tox = "^3.25.0"
-bandit = "^1.7.4"
-python-semantic-release = "^7.33.2"
-flake8-cognitive-complexity = "^0.1.0"
+pytest-sugar = "^0.9.7"
+pytest-repeat = "^0.9.3"
 httpx = "^0.24.0"
 asgi-lifespan = "^2.1.0"
-mypy = "^1.2.0"
-apscheduler = "^3.10.1"
+uvicorn = "^0.25.0"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "^1.4.2"
 mkdocs-material = "^8.2.1"
 mkdocs-autorefs = "^0.4.1"
-mkdocs-gen-files = "^0.4.0"
-mkdocstrings-python = "^0.8.2"
+mkdocs-gen-files = ">=0.4,<0.6"
+mkdocstrings = {version = ">=0.18", extras = ["python"]}
 
 [tool.pytest.ini_options]
-addopts = "--cov=./fastapi_views"
+addopts = "--cov=./fastapi_views --count=3"
 testpaths = [
    "./tests"
 ]
 asyncio_mode = "auto"
 
-[tool.bandit]
-skips = ['B101']
+[tool.mypy]
+python_version = 3.9
+ignore_missing_imports = true
+no_site_packages = true
 
-[tool.isort]
-profile = "black"
+[tool.ruff]
+target-version = "py39"
+
+line-length = 88
+indent-width = 4
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+    "UP", # pyupgrade
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "B008",  # do not perform function calls in argument defaults
+    "E501", # line too long
+]
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+line-ending = "auto"
+
+[tool.ruff.mccabe]
+max-complexity = 8
+
+[tool.deptry.per_rule_ignores]
+DEP003 = ["fastapi_views", "pydantic_core", "starlette", "typing_extensions"]
+DEP002 = ["uvloop"]
 
 [tool.semantic_release]
 version_variable = [
@@ -68,11 +111,6 @@ major_on_zero = true
 hvcs = "github"
 commit_message = "Bump version: {version}"
 tag_commit = false
-
-[tool.mypy]
-python_version = 3.9
-ignore_missing_imports = true
-no_site_packages = true
 
 [build-system]
 requires = ["poetry-core"]

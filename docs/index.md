@@ -15,7 +15,7 @@
 *FastAPI Class Views and utilities*
 
 ---
-Version: 0.0.7
+Version: 1.0.0-beta.1
 
 Documentation: https://performancemedia.github.io/fastapi-views/
 
@@ -48,7 +48,7 @@ items = {}
 
 
 class MyViewSet(AsyncAPIViewSet):
-    serializer = ItemSchema
+    response_schema = ItemSchema
     
     async def list(self, *args, **kwargs):
         return list(items.values())
