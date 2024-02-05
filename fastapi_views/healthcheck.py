@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable
 
-import anyio
 from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
 from .errors.models import ServiceUnavailableErrorDetails
@@ -44,9 +43,8 @@ class HealthCheck:
 
     async def get_endpoint(self):
         try:
-            async with anyio.create_task_group() as tg:
-                for check in self.checks:
-                    tg.start_soon(check)
+            for check in self.checks:
+                await check()
             return JsonResponse(content={"status": "ok"}, status_code=HTTP_200_OK)
         except Exception as e:
             self.logger.warning("Healthcheck failed with exception", exc_info=e)
