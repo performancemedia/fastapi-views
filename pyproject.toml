@@ -94,7 +94,7 @@ line-ending = "auto"
 max-complexity = 8
 
 [tool.deptry.per_rule_ignores]
-DEP003 = ["fastapi-views", "pydantic_core", "starlette", "typing_extensions"]
+DEP003 = ["fastapi_views", "pydantic_core", "starlette", "typing_extensions"]
 DEP002 = ["uvloop"]
 
 [tool.semantic_release]
