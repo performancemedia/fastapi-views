@@ -19,8 +19,7 @@ jobs:
       - run: poetry install --all-extras
       - run: poetry check
       - run: poetry run ruff check ./fastapi_views
-      - run: poetry run black ./ fastapi_views --check
-      - run: poetry run isort ./ fastapi_views --check
+      - run: poetry run ruff format ./fastapi_views --check
       - run: poetry run mypy ./fastapi_views
       - run: poetry run deptry ./fastapi_views
       - run: poetry run bandit -r ./fastapi_views
