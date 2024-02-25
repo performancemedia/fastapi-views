@@ -3,7 +3,7 @@ import functools
 import inspect
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Generator
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
 from fastapi import Depends, Request, Response
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
@@ -14,8 +14,6 @@ from ..serializer import TypeSerializer
 from ..types import Action, SerializerOptions
 from .functools import VIEWSET_ROUTE_FLAG, errors
 from .mixins import DetailViewMixin, ErrorHandlerMixin
-
-S = TypeVar("S", bound=type[Any])
 
 Endpoint = Callable[..., Union[Response, Awaitable[Response]]]
 
@@ -148,7 +146,7 @@ class APIView(View, ErrorHandlerMixin):
 
     @classmethod
     @functools.lru_cache(maxsize=None, typed=True)
-    def get_serializer(cls, action: Action) -> TypeSerializer[S]:
+    def get_serializer(cls, action: Action) -> TypeSerializer:
         response_schema = cls.get_response_schema(action)
         return TypeSerializer(response_schema)
 

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fastapi-views"
-version = "0.0.7"
+version = "0.1.0"
 description = "FastAPI Class Views and utilities"
 authors = ["Radzim Kowalow <radzim.kowalow@performance-media.pl>"]
 readme = "README.md"
@@ -44,6 +44,7 @@ mkdocs-material = "^8.2.1"
 mkdocs-autorefs = "^0.4.1"
 mkdocs-gen-files = ">=0.4,<0.6"
 mkdocstrings = {version = ">=0.18", extras = ["python"]}
+watchdog = ">=2.0,<4.0"
 
 [tool.pytest.ini_options]
 addopts = "--cov=./fastapi_views --count=3"
