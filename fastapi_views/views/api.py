@@ -1,8 +1,9 @@
 import asyncio
+import functools
 import inspect
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Generator
-from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
 from fastapi import Depends, Request, Response
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
@@ -13,8 +14,6 @@ from ..serializer import TypeSerializer
 from ..types import Action, SerializerOptions
 from .functools import VIEWSET_ROUTE_FLAG, errors
 from .mixins import DetailViewMixin, ErrorHandlerMixin
-
-S = TypeVar("S", bound=type[Any])
 
 Endpoint = Callable[..., Union[Response, Awaitable[Response]]]
 
@@ -132,32 +131,29 @@ class View(ABC):
         )
 
 
-class APIView(View, ErrorHandlerMixin, Generic[S]):
+class APIView(View, ErrorHandlerMixin):
     """
     View with build-in json serialization via
     `serializer` and error handling
     """
 
-    response_schema: S
+    response_schema: Any
     serializer_options: SerializerOptions = {"by_alias": True, "from_attributes": True}
 
-    _serializers: dict[str, TypeSerializer[S]] = {}
-
     @classmethod
-    def get_response_schema(cls, action: Action) -> S:
+    def get_response_schema(cls, action: Action) -> Any:
         return cls.response_schema
 
     @classmethod
-    def get_serializer(cls, action: Action) -> TypeSerializer[S]:
-        if action not in cls._serializers:
-            response_schema = cls.get_response_schema(action)
-            cls._serializers[action] = TypeSerializer(response_schema)
-        return cls._serializers[action]
+    @functools.lru_cache(maxsize=None, typed=True)
+    def get_serializer(cls, action: Action) -> TypeSerializer:
+        response_schema = cls.get_response_schema(action)
+        return TypeSerializer(response_schema)
 
     def serialize_response(
         self, action: Action, content: Any, status_code: int = HTTP_200_OK
     ):
-        if content:
+        if content and not isinstance(content, bytes):
             serializer = self.get_serializer(action)
             content = serializer.serialize(content, **self.serializer_options)
         if self.response.status_code is None:
@@ -165,11 +161,11 @@ class APIView(View, ErrorHandlerMixin, Generic[S]):
         return self.get_response(content)
 
 
-class BaseListAPIView(APIView[S]):
+class BaseListAPIView(APIView):
     response_schema_as_list: bool = True
 
     @classmethod
-    def get_response_schema(cls, action: Action) -> S:
+    def get_response_schema(cls, action: Action) -> Any:
         if action == "list" and cls.response_schema_as_list:
             return list[cls.response_schema]  # type: ignore
         return cls.response_schema

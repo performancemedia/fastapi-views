@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fastapi-views"
-version = "1.0.0-beta.1"
+version = "0.1.0"
 description = "FastAPI Class Views and utilities"
 authors = ["Radzim Kowalow <radzim.kowalow@performance-media.pl>"]
 readme = "README.md"
@@ -15,12 +15,12 @@ orjson = "^3.9.10"
 opentelemetry-instrumentation-fastapi = {version = "*", optional = true}
 starlette-exporter = {version = "^0.17.1", optional = true}
 uvloop = {version = "^0.19.0", optional = true}
-
+uvicorn = {version = "^0.27.1", optional = true}
 
 [tool.poetry.extras]
-all = ["uvloop", "starlette-exporter", "opentelemetry-instrumentation-fastapi"]
 uvloop = ["uvloop"]
 prometheus = ["starlette-exporter"]
+uvicorn = ["uvicorn"]
 opentelemetry = ["opentelemetry-instrumentation-fastapi"]
 
 [tool.poetry.group.dev.dependencies]
@@ -37,7 +37,6 @@ pytest-sugar = ">=0.9.7,<1.1.0"
 pytest-repeat = "^0.9.3"
 httpx = "^0.24.0"
 asgi-lifespan = "^2.1.0"
-uvicorn = "^0.25.0"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "^1.4.2"
@@ -45,6 +44,7 @@ mkdocs-material = "^8.2.1"
 mkdocs-autorefs = "^0.4.1"
 mkdocs-gen-files = ">=0.4,<0.6"
 mkdocstrings = {version = ">=0.18", extras = ["python"]}
+watchdog = ">=2.0,<4.0"
 
 [tool.pytest.ini_options]
 addopts = "--cov=./fastapi_views --count=3"
@@ -95,7 +95,7 @@ max-complexity = 8
 
 [tool.deptry.per_rule_ignores]
 DEP003 = ["fastapi_views", "pydantic_core", "starlette", "typing_extensions"]
-DEP002 = ["uvloop"]
+DEP002 = ["uvloop", "uvicorn"]
 
 [tool.semantic_release]
 version_variable = [
