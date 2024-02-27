@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fastapi-views"
-version = "0.1.0"
+version = "0.1.1"
 description = "FastAPI Class Views and utilities"
 authors = ["Radzim Kowalow <radzim.kowalow@performance-media.pl>"]
 readme = "README.md"
@@ -94,8 +94,9 @@ line-ending = "auto"
 max-complexity = 8
 
 [tool.deptry.per_rule_ignores]
+DEP001 = ["opentelemetry"]
 DEP003 = ["fastapi_views", "pydantic_core", "starlette", "typing_extensions"]
-DEP002 = ["uvloop", "uvicorn"]
+DEP002 = ["uvloop", "uvicorn", "opentelemetry-instrumentation-fastapi"]
 
 [tool.semantic_release]
 version_variable = [
