@@ -9,6 +9,8 @@ class JsonResponse(JSONResponse):
     def render(self, content: Any) -> bytes:
         if isinstance(content, bytes):
             return content
+        if isinstance(content, str):
+            return content.encode("utf-8")
         return orjson.dumps(
             content,
             option=orjson.OPT_NON_STR_KEYS | orjson.OPT_SERIALIZE_NUMPY,
