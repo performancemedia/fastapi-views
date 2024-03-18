@@ -1,6 +1,7 @@
 from logging import getLogger
 
 from fastapi import Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
 
@@ -26,7 +27,7 @@ def request_validation_handler(request: Request, exc: RequestValidationError):
     model = UnprocessableEntityErrorDetails(
         detail="Validation error",
         instance=request.url.path,
-        errors=exc.errors(),
+        errors=jsonable_encoder(exc.errors()),
     )
     return JsonResponse(
         status_code=model.status,
