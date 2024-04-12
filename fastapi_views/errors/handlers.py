@@ -2,7 +2,7 @@ from logging import getLogger
 
 from fastapi import Request
 from fastapi.encoders import jsonable_encoder
-from fastapi.exceptions import RequestValidationError, ResponseValidationError
+from fastapi.exceptions import RequestValidationError
 from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
 
 from ..response import JsonResponse
@@ -35,23 +35,12 @@ def request_validation_handler(request: Request, exc: RequestValidationError):
     )
 
 
-def response_validation_handler(request: Request, exc: ResponseValidationError):
-    logger.exception("Response validation failed", exc_info=exc)
-    return JsonResponse(
-        status_code=HTTP_500_INTERNAL_SERVER_ERROR,
-        content=InternalServerErrorDetails(
-            detail="Response validation failed",
-            instance=request.url.path,
-        ).model_dump_json(),
-    )
-
-
 def exception_handler(request: Request, exc: Exception):
-    logger.warning("Unhandled exception", exc_info=exc)
+    logger.exception("Unhandled exception", exc_info=exc)
     return JsonResponse(
         status_code=HTTP_500_INTERNAL_SERVER_ERROR,
         content=InternalServerErrorDetails(
-            detail=str(exc),
+            detail="Unhandled server error",
             instance=request.url.path,
         ).model_dump_json(),
     )
@@ -60,5 +49,4 @@ def exception_handler(request: Request, exc: Exception):
 def add_error_handlers(app):
     app.add_exception_handler(APIError, api_error_handler)
     app.add_exception_handler(RequestValidationError, request_validation_handler)
-    app.add_exception_handler(ResponseValidationError, response_validation_handler)
     app.add_exception_handler(Exception, exception_handler)

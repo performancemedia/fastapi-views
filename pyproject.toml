@@ -6,18 +6,23 @@ authors = ["Radzim Kowalow <radzim.kowalow@performance-media.pl>"]
 readme = "README.md"
 packages = [{ include = "fastapi_views" }]
 
+[tool.poetry.scripts]
+fastapi-views = "fastapi_views.cli:cli"
+
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
-fastapi = "^0.109.2"
+typer = "^0.9.0"
+fastapi = "^0.110.1"
 pydantic = ">=2.0,<3.0"
 pydantic-settings = ">=2.0,<3.0"
 orjson = "^3.9.10"
 opentelemetry-instrumentation-fastapi = { version = "*", optional = true }
-starlette-exporter = { version = "^0.17.1", optional = true }
+starlette-exporter = { version = "^0.21.0", optional = true }
 uvloop = { version = "^0.19.0", optional = true }
 uvicorn = { version = "^0.27.1", optional = true }
 
 [tool.poetry.extras]
+all = ["uvloop", "starlette-exporter", "uvicorn", "opentelemetry-instrumentation-fastapi"]
 uvloop = ["uvloop"]
 prometheus = ["starlette-exporter"]
 uvicorn = ["uvicorn"]
@@ -93,7 +98,7 @@ line-ending = "auto"
 max-complexity = 8
 
 [tool.deptry.per_rule_ignores]
-DEP001 = ["opentelemetry"]
+DEP001 = ["opentelemetry", "yaml"]
 DEP003 = ["fastapi_views", "pydantic_core", "starlette", "typing_extensions"]
 DEP002 = ["uvloop", "uvicorn", "opentelemetry-instrumentation-fastapi"]
 
