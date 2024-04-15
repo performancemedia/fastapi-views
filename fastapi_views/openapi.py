@@ -8,4 +8,4 @@ def simplify_operation_ids(app: FastAPI) -> None:
     """
     for route in app.routes:
         if isinstance(route, APIRoute):
-            route.operation_id = route.name
+            route.operation_id = route.name.replace(" ", "")

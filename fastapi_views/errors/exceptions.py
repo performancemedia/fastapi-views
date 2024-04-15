@@ -25,7 +25,8 @@ class APIError(Exception):
         return self.model.model_fields["status"].get_default()
 
     def as_model(self, **kwargs) -> ErrorDetails:
-        return self.model(detail=self.detail, **self.kwargs, **kwargs)
+        kwargs = {**self.kwargs, **kwargs}
+        return self.model(detail=self.detail, **kwargs)
 
 
 class NotFound(APIError):

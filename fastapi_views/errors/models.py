@@ -1,7 +1,6 @@
 from typing import Any, ClassVar, Literal, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
-from pydantic.fields import FieldInfo
+from pydantic import BaseModel, ConfigDict, Field, create_model, field_validator
 from pydantic_core import Url
 from starlette.status import (
     HTTP_400_BAD_REQUEST,
@@ -23,15 +22,10 @@ class ErrorDetails(BaseModel):
     Base Model for https://www.rfc-editor.org/rfc/rfc9457.html
     """
 
-    def __init_subclass__(cls, **kwargs):
-        for k in ("status", "title", "type"):
-            if field := kwargs.get(k):
-                cls.model_fields[k] = FieldInfo(
-                    default=field, annotation=Literal[field]
-                )
-        cls._registry[cls.get_status()] = cls
-
     _registry: ClassVar[dict[int, type["ErrorDetails"]]] = {}
+
+    def __init_subclass__(cls, **kwargs):
+        cls._registry[cls.get_status()] = cls
 
     type: Union[Url, Literal["about:blank"]] = Field(
         "about:blank",
@@ -78,82 +72,76 @@ class ErrorDetails(BaseModel):
     )
 
 
-class NotFoundErrorDetails(
-    ErrorDetails,
+def create_error_model(name: str, type: str, title: str, status: int):
+    return create_model(
+        name,
+        __base__=ErrorDetails,
+        type=(Literal[type], Field(type, description="Error type")),
+        title=(Literal[title], Field(title, description="Error title")),
+        status=(Literal[status], Field(status, description="Error status")),
+    )
+
+
+NotFoundErrorDetails = create_error_model(
+    "NotFoundErrorDetails",
     type="https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.4",
     title="Not Found",
     status=HTTP_404_NOT_FOUND,
-):
-    pass
+)
 
-
-class UnprocessableEntityErrorDetails(
-    ErrorDetails,
+UnprocessableEntityErrorDetails = create_error_model(
+    "UnprocessableEntityErrorDetails",
     type="https://datatracker.ietf.org/doc/html/rfc4918#section-11.2",
     title="Unprocessable Entity",
     status=HTTP_422_UNPROCESSABLE_ENTITY,
-):
-    pass
+)
 
 
-class BadRequestErrorDetails(
-    ErrorDetails,
+BadRequestErrorDetails = create_error_model(
+    "BadRequestErrorDetails",
     type="https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.1",
     title="Bad Request",
     status=HTTP_400_BAD_REQUEST,
-):
-    pass
+)
 
-
-class UnauthorizedErrorDetails(
-    ErrorDetails,
+UnauthorizedErrorDetails = create_error_model(
+    "UnauthorizedErrorDetails",
     type="https://datatracker.ietf.org/doc/html/rfc7235#section-3.1",
     title="Unauthorized",
     status=HTTP_401_UNAUTHORIZED,
-):
-    pass
+)
 
-
-class ForbiddenErrorDetails(
-    ErrorDetails,
+ForbiddenErrorDetails = create_error_model(
+    "ForbiddenErrorDetails",
     type="https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.3",
     title="Forbidden",
     status=HTTP_403_FORBIDDEN,
-):
-    pass
+)
 
-
-class TooManyRequestsErrorDetails(
-    ErrorDetails,
+TooManyRequestsErrorDetails = create_error_model(
+    "TooManyRequestsErrorDetails",
     type="https://datatracker.ietf.org/doc/html/rfc6585#section-4",
     title="Too many requests",
     status=HTTP_429_TOO_MANY_REQUESTS,
-):
-    pass
+)
 
-
-class ConflictErrorDetails(
-    ErrorDetails,
+ConflictErrorDetails = create_error_model(
+    "ConflictErrorDetails",
     type="https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.8",
     title="Conflict",
     status=HTTP_409_CONFLICT,
-):
-    pass
+)
 
-
-class ServiceUnavailableErrorDetails(
-    ErrorDetails,
+ServiceUnavailableErrorDetails = create_error_model(
+    "ServiceUnavailableErrorDetails",
     type="https://datatracker.ietf.org/doc/html/rfc7231#section-6.6.4",
     title="Service Unavailable",
     status=HTTP_503_SERVICE_UNAVAILABLE,
-):
-    pass
+)
 
-
-class InternalServerErrorDetails(
-    ErrorDetails,
+InternalServerErrorDetails = create_error_model(
+    "InternalServerErrorDetails",
     type="https://datatracker.ietf.org/doc/html/rfc7231#section-6.6.1",
     title="Internal Server Error",
     status=HTTP_500_INTERNAL_SERVER_ERROR,
-):
-    pass
+)

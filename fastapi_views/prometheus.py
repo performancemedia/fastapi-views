@@ -9,9 +9,9 @@ def add_prometheus_middleware(
 ) -> None:
     from starlette_exporter import PrometheusMiddleware, handle_metrics
 
+    kwargs.setdefault("group_paths", True)
     kwargs.setdefault("app_name", app.title.lower().replace(" ", "_"))
     kwargs.setdefault("skip_paths", ["/healthz", "/docs", "/openapi.json", "/metrics"])
-    kwargs.setdefault("group_paths", True)
     kwargs.setdefault("labels", {"server": socket.gethostname()})
     kwargs.setdefault("always_use_int_status", True)
     app.add_middleware(PrometheusMiddleware, **kwargs)

@@ -55,18 +55,25 @@ class View(ABC):
 
     @classmethod
     def get_custom_endpoint(cls, func):
+        options = getattr(func, "kwargs", {})
+        status_code = options.get("status_code", None)
+        response_class = options.get("response_class", None)
+
         async def _async_endpoint(self, *args, **kwargs):
             res = await func(self, *args, **kwargs)
-            return self.get_response(content=res)
+            return self.get_response(
+                content=res, status_code=status_code, response_class=response_class
+            )
 
         def _sync_endpoint(self, *args, **kwargs):
             res = func(self, *args, **kwargs)
-            return self.get_response(content=res)
+            return self.get_response(
+                content=res, status_code=status_code, response_class=response_class
+            )
 
-        if asyncio.iscoroutinefunction(func):
-            endpoint = _async_endpoint
-        else:
-            endpoint = _sync_endpoint
+        endpoint = (
+            _async_endpoint if asyncio.iscoroutinefunction(func) else _sync_endpoint
+        )
 
         cls._patch_endpoint_signature(endpoint, func)
         return endpoint
@@ -121,10 +128,16 @@ class View(ABC):
         endpoint.__signature__ = new_signature
         cls._patch_metadata(endpoint, method)
 
-    def get_response(self, content: Any, status_code: Optional[int] = None) -> Response:
+    def get_response(
+        self,
+        content: Any,
+        status_code: Optional[int] = None,
+        response_class: Optional[type[Response]] = None,
+    ) -> Response:
         if isinstance(content, Response):
             return content
-        return self.default_response_class(
+        response_class = response_class or self.default_response_class
+        return response_class(
             content=content,
             status_code=status_code or self.response.status_code or HTTP_200_OK,
             headers=dict(self.response.headers),
@@ -244,7 +257,7 @@ class BaseRetrieveAPIView(APIView, DetailViewMixin):
             endpoint=cls.get_retrieve_endpoint(),
             path=cls.get_detail_route(action="retrieve"),
             methods=["GET"],
-            responses=errors(NotFound),
+            responses=errors(NotFound, UnprocessableEntity),
             response_model=cls.get_response_schema(action="retrieve"),
             name=f"Get {cls.get_name()}",
             operation_id=f"get_{cls.get_slug_name()}",
@@ -528,6 +541,7 @@ class BaseDestroyAPIView(APIView, DetailViewMixin):
             endpoint=cls.get_destroy_endpoint(),
             methods=["DELETE"],
             response_class=Response,
+            responses=errors(UnprocessableEntity),
             status_code=HTTP_204_NO_CONTENT,
             name=f"Delete {cls.get_name()}",
             operation_id=f"delete_{cls.get_slug_name()}",

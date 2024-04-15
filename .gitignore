@@ -34,3 +34,5 @@ site/
 # mypy
 .mypy_cache
 .tox/
+openapi.json
+openapi.yaml
