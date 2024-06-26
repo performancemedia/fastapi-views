@@ -36,4 +36,3 @@ class Page(BaseSchema, Generic[T]):
     items: list[T] = []
     next_page: Optional[PageToken] = None
     previous_page: Optional[PageToken] = None
-    current_page: Optional[PageToken] = None
